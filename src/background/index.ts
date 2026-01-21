@@ -98,10 +98,29 @@ function isTelegramUrl(url: string | undefined): boolean {
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
+chrome.sidePanel.setOptions({ enabled: false })
+
+async function updateSidePanelForTab(tabId: number, url: string | undefined) {
+  const isTelegram = isTelegramUrl(url)
+  if (isTelegram) {
+    await chrome.sidePanel.setOptions({
+      tabId,
+      path: 'sidepanel.html',
+      enabled: true
+    })
+  } else {
+    await chrome.sidePanel.setOptions({
+      tabId,
+      enabled: false
+    })
+  }
+}
+
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   console.log('[Background] Tab activated:', activeInfo.tabId)
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId)
+    await updateSidePanelForTab(activeInfo.tabId, tab.url)
     const isTelegram = isTelegramUrl(tab.url)
 
     if (!isTelegram) {
@@ -142,6 +161,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   if (changeInfo.url && tab.url && tab.id) {
+    await updateSidePanelForTab(tab.id, tab.url)
     const isTelegram = isTelegramUrl(tab.url)
 
     if (isTelegram) {
@@ -492,7 +512,12 @@ async function initializeExtension() {
     })
   }
 
+  const tabs = await chrome.tabs.query({})
+  for (const tab of tabs) {
+    if (tab.id) {
+      await updateSidePanelForTab(tab.id, tab.url)
+    }
+  }
 }
-
 
 initializeExtension()
