@@ -3,6 +3,7 @@ export enum MessageType {
   NEW_MESSAGE = 'NEW_MESSAGE',
   MESSAGES_EXTRACTED = 'MESSAGES_EXTRACTED',
   INDEX_DIALOGUE = 'INDEX_DIALOGUE',
+  INDEX_UPDATED = 'INDEX_UPDATED',
   CLEAR_INDEX = 'CLEAR_INDEX',
   QUERY_CONTEXT = 'QUERY_CONTEXT',
   GENERATE_HINTS = 'GENERATE_HINTS',
@@ -48,6 +49,11 @@ export interface IndexDialoguePayload {
 
 export interface ClearIndexPayload {
   peerId: string
+}
+
+export interface IndexUpdatedPayload {
+  peerId: string
+  messageCount: number
 }
 
 export interface QueryContextPayload {

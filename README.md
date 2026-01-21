@@ -3,6 +3,8 @@
 ![Demo](img/demo1.jpg)
 
 > **Warning:** This project is not production ready and will never be. Use AI wisely and with great care.
+>
+> **Privacy:** Beware - do not share your private data with third-party APIs without filtering sensitive information and having a clear reason to do so.
 
 A Chrome extension that enhances Telegram Web with AI-powered reply suggestions and private notes.
 
