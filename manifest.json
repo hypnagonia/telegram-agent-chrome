@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Telegram Web Assistant",
+  "version": "0.1.0",
+  "description": "AI-powered reply hints and private notes for Telegram Web",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "activeTab",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://web.telegram.org/*",
+    "http://localhost:3999/*"
+  ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.telegram.org/k/*",
+        "https://web.telegram.org/a/*",
+        "https://web.telegram.org/*"
+      ],
+      "js": ["src/content/index.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Telegram Assistant"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["wasm/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
