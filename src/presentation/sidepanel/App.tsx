@@ -127,9 +127,6 @@ export function App() {
   if (isDisabled) {
     return (
       <div style={styles.container}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>Telegram Assistant</h1>
-        </div>
         <div style={`
           display: flex;
           flex-direction: column;
@@ -153,10 +150,6 @@ export function App() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Telegram Assistant</h1>
-      </div>
-
       <IndexStatus
         dialogue={dialogue.dialogue}
         peerName={dialogue.peerId}

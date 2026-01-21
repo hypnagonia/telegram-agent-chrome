@@ -32,8 +32,20 @@
   "side_panel": {
     "default_path": "sidepanel.html"
   },
+  "icons": {
+    "16": "img/icons/icon16.png",
+    "32": "img/icons/icon32.png",
+    "48": "img/icons/icon48.png",
+    "128": "img/icons/icon128.png"
+  },
   "action": {
-    "default_title": "Telegram Assistant"
+    "default_title": "Telegram Assistant",
+    "default_icon": {
+      "16": "img/icons/icon16.png",
+      "32": "img/icons/icon32.png",
+      "48": "img/icons/icon48.png",
+      "128": "img/icons/icon128.png"
+    }
   },
   "web_accessible_resources": [
     {
