@@ -7,20 +7,9 @@ import {
   type MessagesExtractedPayload,
   type BridgeMessage,
 } from '@infrastructure/adapters/telegram/MessageBridge'
+import { createLogger } from '@infrastructure/logging/remoteLog'
 
-const REMOTE_LOG_ENABLED = true
-const REMOTE_LOG_URL = 'http://localhost:3999/log'
-
-function log(message: string, data?: unknown) {
-  console.log('[Content]', message, data || '')
-  if (REMOTE_LOG_ENABLED) {
-    fetch(REMOTE_LOG_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'content', message, data }),
-    }).catch(() => {})
-  }
-}
+const { log } = createLogger('Content')
 
 const adapter = new TelegramDOMAdapter()
 let indexedMessageIds = new Set<string>()

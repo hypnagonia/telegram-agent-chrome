@@ -25,6 +25,9 @@ import { QueryContextUseCase } from '@application/use-cases/QueryContextUseCase'
 import { GenerateHintUseCase } from '@application/use-cases/GenerateHintUseCase'
 import { ManageNotesUseCase } from '@application/use-cases/ManageNotesUseCase'
 import { MessageBuilder } from '@domain/entities/Message'
+import { createLogger } from '@infrastructure/logging/remoteLog'
+
+const log = createLogger('Background')
 
 const messageStore = new MessageStore()
 const noteStore = new NoteStore()
@@ -66,10 +69,10 @@ async function saveSettings(settings: Partial<Settings>): Promise<void> {
 }
 
 async function ensureLLMAdapter(): Promise<LLMAdapter> {
-  console.log('[Background] ensureLLMAdapter called, current adapter:', !!llmAdapter)
+  log.log(' ensureLLMAdapter called, current adapter:', !!llmAdapter)
   if (!llmAdapter) {
     const settings = await getSettings()
-    console.log('[Background] Settings loaded:', {
+    log.log(' Settings loaded:', {
       apiKeySet: !!settings.apiKey,
       apiKeyLength: settings.apiKey?.length || 0,
       provider: settings.apiProvider
@@ -81,7 +84,7 @@ async function ensureLLMAdapter(): Promise<LLMAdapter> {
       provider: settings.apiProvider,
       apiKey: settings.apiKey,
     })
-    console.log('[Background] LLM adapter created for provider:', settings.apiProvider)
+    log.log(' LLM adapter created for provider:', settings.apiProvider)
   }
   return llmAdapter
 }
@@ -117,7 +120,7 @@ async function updateSidePanelForTab(tabId: number, url: string | undefined) {
 }
 
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  console.log('[Background] Tab activated:', activeInfo.tabId)
+  log.log(' Tab activated:', activeInfo.tabId)
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId)
     await updateSidePanelForTab(activeInfo.tabId, tab.url)
@@ -146,7 +149,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             peerName = extracted.peerName
           }
         } catch {}
-        console.log('[Background] Tab has Telegram dialogue:', peerId, 'name:', peerName)
+        log.log(' Tab has Telegram dialogue:', peerId, 'name:', peerName)
         currentDialogue = { peerId, peerName }
         chrome.runtime.sendMessage({
           type: MessageType.DIALOGUE_CHANGED,
@@ -155,7 +158,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       }
     }
   } catch (err) {
-    console.error('[Background] Tab activation error:', err)
+    log.error(' Tab activation error:', err)
   }
 })
 
@@ -186,7 +189,7 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
               }
             } catch {}
           }, 300)
-          console.log('[Background] Tab URL updated, dialogue:', peerId)
+          log.log(' Tab URL updated, dialogue:', peerId)
           currentDialogue = { peerId, peerName }
           chrome.runtime.sendMessage({
             type: MessageType.DIALOGUE_CHANGED,
@@ -194,7 +197,7 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
           }).catch(() => {})
         }
       } catch (err) {
-        console.error('[Background] Tab update error:', err)
+        log.error(' Tab update error:', err)
       }
     }
   }
@@ -203,7 +206,7 @@ chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
 onMessage<DialogueChangedPayload>(
   MessageType.DIALOGUE_CHANGED,
   async (payload) => {
-    console.log('[Background] Dialogue changed:', payload.peerName)
+    log.log(' Dialogue changed:', payload.peerName)
     currentDialogue = { peerId: payload.peerId, peerName: payload.peerName }
 
     chrome.runtime.sendMessage({
@@ -223,16 +226,16 @@ onMessage<undefined>(
 onMessage<undefined>(
   MessageType.GET_ACTIVE_TAB_PEER,
   async () => {
-    console.log('[Background] GET_ACTIVE_TAB_PEER called')
+    log.log(' GET_ACTIVE_TAB_PEER called')
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-      console.log('[Background] Active tab:', tab?.url)
+      log.log(' Active tab:', tab?.url)
       if (tab?.url && tab.id) {
         const url = new URL(tab.url)
-        console.log('[Background] Parsed URL - hostname:', url.hostname, 'hash:', url.hash)
+        log.log(' Parsed URL - hostname:', url.hostname, 'hash:', url.hash)
         if (url.hostname === 'web.telegram.org' && url.hash.length > 1) {
           const peerId = url.hash.slice(1)
-          console.log('[Background] Got peerId from active tab:', peerId)
+          log.log(' Got peerId from active tab:', peerId)
 
           let peerName = peerId
           try {
@@ -242,10 +245,10 @@ onMessage<undefined>(
             }) as { peerId: string | null; peerName: string | null }
             if (extracted?.peerName) {
               peerName = extracted.peerName
-              console.log('[Background] Got peerName from content script:', peerName)
+              log.log(' Got peerName from content script:', peerName)
             }
           } catch (e) {
-            console.log('[Background] Could not get peerName from content script')
+            log.log(' Could not get peerName from content script')
           }
 
           currentDialogue = { peerId, peerName }
@@ -253,9 +256,9 @@ onMessage<undefined>(
         }
       }
     } catch (err) {
-      console.error('[Background] Error getting active tab:', err)
+      log.error(' Error getting active tab:', err)
     }
-    console.log('[Background] GET_ACTIVE_TAB_PEER returning null')
+    log.log(' GET_ACTIVE_TAB_PEER returning null')
     return null
   }
 )
@@ -263,7 +266,7 @@ onMessage<undefined>(
 onMessage<NewMessagePayload>(
   MessageType.NEW_MESSAGE,
   async (payload) => {
-    console.log('[Background] NEW_MESSAGE received:', payload.id, payload.text.slice(0, 30))
+    log.log(' NEW_MESSAGE received:', payload.id, payload.text.slice(0, 30))
     const message = new MessageBuilder()
       .withId(payload.id)
       .withPeerId(payload.peerId)
@@ -278,7 +281,7 @@ onMessage<NewMessagePayload>(
     if (payload.text.trim().length > 0) {
       const content = `[${payload.senderName}]: ${payload.text}`
       await ragAdapter.index(payload.peerId, content)
-      console.log('[Background] Auto-indexed new message into BM25')
+      log.log(' Auto-indexed new message into BM25')
 
       const dialogue = await dialogueStore.findByPeerId(payload.peerId)
       if (dialogue) {
@@ -295,7 +298,7 @@ onMessage<NewMessagePayload>(
 onMessage<MessagesExtractedPayload>(
   MessageType.MESSAGES_EXTRACTED,
   async (payload) => {
-    console.log('[Background] MESSAGES_EXTRACTED received:', payload.peerId, 'count:', payload.messages.length)
+    log.log(' MESSAGES_EXTRACTED received:', payload.peerId, 'count:', payload.messages.length)
     const messages = payload.messages.map((m) =>
       new MessageBuilder()
         .withId(m.id)
@@ -307,7 +310,7 @@ onMessage<MessagesExtractedPayload>(
         .build()
     )
     await messageStore.saveBatch(messages)
-    console.log('[Background] Messages saved to store')
+    log.log(' Messages saved to store')
 
     const textsToIndex = payload.messages
       .filter(m => m.text.trim().length > 0)
@@ -316,7 +319,7 @@ onMessage<MessagesExtractedPayload>(
     if (textsToIndex.length > 0) {
       const content = textsToIndex.join('\n')
       await ragAdapter.index(payload.peerId, content)
-      console.log('[Background] Auto-indexed', textsToIndex.length, 'messages into BM25')
+      log.log(' Auto-indexed', textsToIndex.length, 'messages into BM25')
 
       const dialogue = await dialogueStore.findByPeerId(payload.peerId)
       const newCount = (dialogue?.messageCount || 0) + textsToIndex.length
@@ -339,7 +342,7 @@ onMessage<MessagesExtractedPayload>(
 onMessage<IndexDialoguePayload>(
   MessageType.INDEX_DIALOGUE,
   async (payload) => {
-    console.log('[Background] INDEX_DIALOGUE called:', payload)
+    log.log(' INDEX_DIALOGUE called:', payload)
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
     if (!tab?.id) {
@@ -349,14 +352,14 @@ onMessage<IndexDialoguePayload>(
     let extracted: { peerId: string | null; peerName: string | null; messages: Array<{ id: string; text: string; isOutgoing: boolean; senderName: string; timestamp: number }> } | null = null
 
     try {
-      console.log('[Background] Requesting message extraction from content script...')
+      log.log(' Requesting message extraction from content script...')
       extracted = await chrome.tabs.sendMessage(tab.id, {
         type: MessageType.EXTRACT_MESSAGES,
         payload: {},
       })
-      console.log('[Background] Extraction result:', extracted?.messages?.length || 0, 'messages')
+      log.log(' Extraction result:', extracted?.messages?.length || 0, 'messages')
     } catch (err) {
-      console.error('[Background] Content script not responding:', err)
+      log.error(' Content script not responding:', err)
       throw new Error('Content script disconnected. Please RELOAD the Telegram Web page (Cmd+R) and try again.')
     }
 
@@ -372,11 +375,11 @@ onMessage<IndexDialoguePayload>(
           .build()
       )
       await messageStore.saveBatch(messages)
-      console.log('[Background] Saved', messages.length, 'messages from extraction')
+      log.log(' Saved', messages.length, 'messages from extraction')
     }
 
     const messages = await messageStore.findByPeerId(payload.peerId)
-    console.log('[Background] Total messages in store:', messages.length)
+    log.log(' Total messages in store:', messages.length)
 
     if (messages.length === 0) {
       throw new Error('No messages found to index. Make sure you have a chat open in Telegram Web.')
@@ -388,7 +391,7 @@ onMessage<IndexDialoguePayload>(
       peerName: payload.peerName,
       messages,
     })
-    console.log('[Background] Index result:', result)
+    log.log(' Index result:', result)
     return result
   }
 )
@@ -396,18 +399,18 @@ onMessage<IndexDialoguePayload>(
 onMessage<ClearIndexPayload>(
   MessageType.CLEAR_INDEX,
   async (payload) => {
-    console.log('[Background] CLEAR_INDEX called for:', payload.peerId)
+    log.log(' CLEAR_INDEX called for:', payload.peerId)
     try {
-      console.log('[Background] Clearing BM25 index...')
+      log.log(' Clearing BM25 index...')
       await ragAdapter.clearByPeerId(payload.peerId)
-      console.log('[Background] Deleting messages from store...')
+      log.log(' Deleting messages from store...')
       await messageStore.deleteByPeerId(payload.peerId)
-      console.log('[Background] Deleting dialogue metadata...')
+      log.log(' Deleting dialogue metadata...')
       await dialogueStore.delete(payload.peerId)
-      console.log('[Background] Index cleared successfully for peer:', payload.peerId)
+      log.log(' Index cleared successfully for peer:', payload.peerId)
       return { success: true }
     } catch (err) {
-      console.error('[Background] CLEAR_INDEX error:', err)
+      log.error(' CLEAR_INDEX error:', err)
       throw err
     }
   }
@@ -424,19 +427,19 @@ onMessage<QueryContextPayload>(
 onMessage<GenerateHintsPayload>(
   MessageType.GENERATE_HINTS,
   async (payload) => {
-    console.log('[Background] GENERATE_HINTS called:', payload)
+    log.log(' GENERATE_HINTS called:', payload)
     try {
       const adapter = await ensureLLMAdapter()
-      console.log('[Background] LLM adapter ready')
+      log.log(' LLM adapter ready')
       const useCase = new GenerateHintUseCase(adapter, ragAdapter, personaStore)
       const result = await useCase.execute({
         peerId: payload.peerId,
         currentMessage: payload.currentMessage,
       })
-      console.log('[Background] Hints generated:', result.hints.length)
+      log.log(' Hints generated:', result.hints.length)
       return result
     } catch (err) {
-      console.error('[Background] GENERATE_HINTS error:', err)
+      log.error(' GENERATE_HINTS error:', err)
       throw err
     }
   }
@@ -501,8 +504,8 @@ onMessage<SettingsPayload>(
 )
 
 async function initializeExtension() {
-  console.log('[Background] Extension initialized')
-  console.log('[Background] BM25 RAG adapter ready')
+  log.log(' Extension initialized')
+  log.log(' BM25 RAG adapter ready')
 
   const settings = await getSettings()
   if (settings.apiKey) {

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "dexie": "^4.0.4",
@@ -16,9 +19,13 @@
     "@crxjs/vite-plugin": "^2.3.0",
     "@preact/preset-vite": "^2.8.2",
     "@types/chrome": "^0.0.260",
+    "@vitest/coverage-v8": "^4.0.17",
+    "fake-indexeddb": "^6.2.5",
+    "happy-dom": "^20.3.4",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
     "vite-plugin-static-copy": "^3.1.5",
+    "vitest": "^3.2.4",
     "webextension-polyfill": "^0.12.0"
   }
 }

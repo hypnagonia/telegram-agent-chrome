@@ -68,7 +68,8 @@ export class TelegramDOMAdapter {
 
     const isOutgoing = isBubbleOutgoing(bubble)
     const senderEl = bubble.querySelector(SELECTORS.SENDER_NAME)
-    const senderName = senderEl?.textContent?.trim() || (isOutgoing ? 'You' : 'Unknown')
+    const peerId = window.location.hash?.slice(1) || this.currentPeerId
+    const senderName = senderEl?.textContent?.trim() || (isOutgoing ? 'You' : peerId || 'Unknown')
 
     const timeEl = bubble.querySelector(SELECTORS.TIME)
     const timeText = timeEl?.textContent?.trim()
