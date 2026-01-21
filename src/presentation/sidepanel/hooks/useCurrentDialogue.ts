@@ -5,6 +5,7 @@ import {
   sendToBackground,
   type DialogueChangedPayload,
   type DialogueStatusPayload,
+  type IndexUpdatedPayload,
 } from '@infrastructure/adapters/telegram/MessageBridge'
 
 interface CurrentDialogueState {
@@ -94,6 +95,18 @@ export function useCurrentDialogue() {
           peerName: payload.peerName,
         }))
         fetchDialogueStatus(payload.peerId)
+      } else if (message.type === MessageType.INDEX_UPDATED) {
+        const payload = message.payload as IndexUpdatedPayload
+        console.log('[useCurrentDialogue] INDEX_UPDATED received:', payload)
+        setState((prev) => {
+          if (prev.peerId === payload.peerId && prev.dialogue) {
+            return {
+              ...prev,
+              dialogue: { ...prev.dialogue, messageCount: payload.messageCount },
+            }
+          }
+          return prev
+        })
       }
     }
 

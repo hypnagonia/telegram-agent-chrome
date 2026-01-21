@@ -112,6 +112,27 @@ export function DebugPanel({ theme }: DebugPanelProps) {
     return date.toLocaleTimeString('en-US', { hour12: false })
   }
 
+  const dumpDB = () => {
+    const request = indexedDB.open('TelegramAssistantDB')
+    request.onsuccess = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result
+      const tx = db.transaction('messages', 'readonly')
+      const store = tx.objectStore('messages')
+      const getAll = store.getAll()
+      getAll.onsuccess = () => {
+        const messages = getAll.result
+        console.log('[DB Dump] Messages count:', messages.length)
+        messages.slice(-20).forEach((m: { id: string; text: string; isOutgoing: boolean; senderName: string }) => {
+          const direction = m.isOutgoing ? '→ OUT' : '← IN'
+          console.log(`[DB] ${direction} [${m.senderName}]: ${m.text.slice(0, 50)}...`)
+        })
+      }
+    }
+    request.onerror = () => {
+      console.error('[DB Dump] Failed to open database')
+    }
+  }
+
   return (
     <div style={panelStyles.container}>
       <div style={panelStyles.header} onClick={() => setIsOpen(!isOpen)}>
@@ -125,6 +146,9 @@ export function DebugPanel({ theme }: DebugPanelProps) {
       {isOpen && (
         <>
           <div style={panelStyles.buttons}>
+            <button style={panelStyles.button} onClick={dumpDB}>
+              Dump DB
+            </button>
             <button style={panelStyles.button} onClick={copyLogs}>
               Copy
             </button>

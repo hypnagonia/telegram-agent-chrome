@@ -274,13 +274,19 @@ onMessage<MessagesExtractedPayload>(
       console.log('[Background] Auto-indexed', textsToIndex.length, 'messages into BM25')
 
       const dialogue = await dialogueStore.findByPeerId(payload.peerId)
+      const newCount = (dialogue?.messageCount || 0) + textsToIndex.length
       if (dialogue) {
         await dialogueStore.save({
           ...dialogue,
-          messageCount: dialogue.messageCount + textsToIndex.length,
+          messageCount: newCount,
           lastIndexedAt: Date.now(),
         })
       }
+
+      chrome.runtime.sendMessage({
+        type: MessageType.INDEX_UPDATED,
+        payload: { peerId: payload.peerId, messageCount: newCount },
+      }).catch(() => {})
     }
   }
 )
