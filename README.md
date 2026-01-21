@@ -1,6 +1,6 @@
 # Telegram Web Assistant
 
-![Demo](img/demo1.jpg)
+![Demo](img/demo2.jpg)
 
 > **Warning:** This project is not production ready and will never be. Use AI wisely and with great care.
 >
