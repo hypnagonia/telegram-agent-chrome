@@ -86,15 +86,36 @@ async function ensureLLMAdapter(): Promise<LLMAdapter> {
   return llmAdapter
 }
 
+function isTelegramUrl(url: string | undefined): boolean {
+  if (!url) return false
+  try {
+    const parsedUrl = new URL(url)
+    return parsedUrl.hostname === 'web.telegram.org'
+  } catch {
+    return false
+  }
+}
+
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
 
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   console.log('[Background] Tab activated:', activeInfo.tabId)
   try {
     const tab = await chrome.tabs.get(activeInfo.tabId)
+    const isTelegram = isTelegramUrl(tab.url)
+
+    if (!isTelegram) {
+      currentDialogue = null
+      chrome.runtime.sendMessage({
+        type: MessageType.DIALOGUE_CHANGED,
+        payload: { peerId: null, peerName: null },
+      }).catch(() => {})
+      return
+    }
+
     if (tab.url && tab.id) {
       const url = new URL(tab.url)
-      if (url.hostname === 'web.telegram.org' && url.hash.length > 1) {
+      if (url.hash.length > 1) {
         const peerId = url.hash.slice(1)
         let peerName = peerId
         try {
@@ -121,36 +142,40 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   if (changeInfo.url && tab.url && tab.id) {
-    try {
-      const url = new URL(tab.url)
-      if (url.hostname === 'web.telegram.org' && url.hash.length > 1) {
-        const peerId = url.hash.slice(1)
-        let peerName = peerId
-        setTimeout(async () => {
-          try {
-            const extracted = await chrome.tabs.sendMessage(tab.id!, {
-              type: MessageType.EXTRACT_MESSAGES,
-              payload: {},
-            }) as { peerName: string | null }
-            if (extracted?.peerName) {
-              peerName = extracted.peerName
-              currentDialogue = { peerId, peerName }
-              chrome.runtime.sendMessage({
-                type: MessageType.DIALOGUE_CHANGED,
-                payload: { peerId, peerName },
-              }).catch(() => {})
-            }
-          } catch {}
-        }, 300)
-        console.log('[Background] Tab URL updated, dialogue:', peerId)
-        currentDialogue = { peerId, peerName }
-        chrome.runtime.sendMessage({
-          type: MessageType.DIALOGUE_CHANGED,
-          payload: { peerId, peerName },
-        }).catch(() => {})
+    const isTelegram = isTelegramUrl(tab.url)
+
+    if (isTelegram) {
+      try {
+        const url = new URL(tab.url)
+        if (url.hash.length > 1) {
+          const peerId = url.hash.slice(1)
+          let peerName = peerId
+          setTimeout(async () => {
+            try {
+              const extracted = await chrome.tabs.sendMessage(tab.id!, {
+                type: MessageType.EXTRACT_MESSAGES,
+                payload: {},
+              }) as { peerName: string | null }
+              if (extracted?.peerName) {
+                peerName = extracted.peerName
+                currentDialogue = { peerId, peerName }
+                chrome.runtime.sendMessage({
+                  type: MessageType.DIALOGUE_CHANGED,
+                  payload: { peerId, peerName },
+                }).catch(() => {})
+              }
+            } catch {}
+          }, 300)
+          console.log('[Background] Tab URL updated, dialogue:', peerId)
+          currentDialogue = { peerId, peerName }
+          chrome.runtime.sendMessage({
+            type: MessageType.DIALOGUE_CHANGED,
+            payload: { peerId, peerName },
+          }).catch(() => {})
+        }
+      } catch (err) {
+        console.error('[Background] Tab update error:', err)
       }
-    } catch (err) {
-      console.error('[Background] Tab update error:', err)
     }
   }
 })
@@ -466,6 +491,8 @@ async function initializeExtension() {
       apiKey: settings.apiKey,
     })
   }
+
 }
+
 
 initializeExtension()

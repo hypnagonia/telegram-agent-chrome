@@ -122,6 +122,35 @@ export function App() {
     </button>
   )
 
+  const isDisabled = !dialogue.peerId && !dialogue.loading
+
+  if (isDisabled) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Telegram Assistant</h1>
+        </div>
+        <div style={`
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 60px 20px;
+          text-align: center;
+          opacity: 0.6;
+        `}>
+          <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+          <div style={`font-size: 16px; font-weight: 600; color: ${theme === 'dark' ? '#888' : '#666'}; margin-bottom: 8px`}>
+            Not on Telegram
+          </div>
+          <div style={`font-size: 13px; color: ${theme === 'dark' ? '#666' : '#888'}; line-height: 1.5`}>
+            Open <strong>web.telegram.org</strong> to use this extension
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>

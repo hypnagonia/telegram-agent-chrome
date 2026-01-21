@@ -8,15 +8,18 @@ import {
   type BridgeMessage,
 } from '@infrastructure/adapters/telegram/MessageBridge'
 
-function remoteLog(message: string, data?: unknown) {
+const REMOTE_LOG_ENABLED = true
+const REMOTE_LOG_URL = 'http://localhost:3999/log'
+
+function log(message: string, data?: unknown) {
   console.log('[Content]', message, data || '')
-  fetch('http://localhost:3999/log', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ source: 'content', message, data }),
-  }).catch((err) => {
-    console.error('[Content] Failed to send log:', err)
-  })
+  if (REMOTE_LOG_ENABLED) {
+    fetch(REMOTE_LOG_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: 'content', message, data }),
+    }).catch(() => {})
+  }
 }
 
 const adapter = new TelegramDOMAdapter()
@@ -80,18 +83,18 @@ async function sendDialogueUpdate(peerId: string, peerName: string) {
 async function checkForNewMessagesOnScroll() {
   const hash = window.location.hash
   if (!hash || hash.length <= 1) {
-    remoteLog('Check: no hash in URL')
+    log('Check: no hash in URL')
     return
   }
 
   const peerId = hash.slice(1)
   const messages = adapter.extractMessagesFromDOM()
-  remoteLog('Check: extracted messages', { count: messages.length, indexedSoFar: indexedMessageIds.size, peerId })
+  log('Check: extracted messages', { count: messages.length, indexedSoFar: indexedMessageIds.size, peerId })
 
   const newMessages = messages.filter(m => !indexedMessageIds.has(m.id))
 
   if (newMessages.length > 0) {
-    remoteLog('Found NEW messages to index', { count: newMessages.length, ids: newMessages.map(m => m.id).slice(0, 5) })
+    log('Found NEW messages to index', { count: newMessages.length, ids: newMessages.map(m => m.id).slice(0, 5) })
 
     const payload: MessagesExtractedPayload = {
       peerId,
@@ -110,12 +113,12 @@ async function checkForNewMessagesOnScroll() {
         payload,
       })
       newMessages.forEach(m => indexedMessageIds.add(m.id))
-      remoteLog('Auto-indexed messages successfully', { count: newMessages.length })
+      log('Auto-indexed messages successfully', { count: newMessages.length })
     } catch (err) {
-      remoteLog('Failed to send messages to background', { error: String(err) })
+      log('Failed to send messages to background', { error: String(err) })
     }
   } else {
-    remoteLog('No new messages found')
+    log('No new messages found')
   }
 }
 
@@ -126,14 +129,14 @@ function setupScrollListener() {
     clearInterval(scrollCheckInterval)
   }
 
-  remoteLog('Setting up periodic message check (every 2s)')
+  log('Setting up periodic message check (every 2s)')
 
   scrollCheckInterval = setInterval(() => {
-    remoteLog('Periodic check triggered')
+    log('Periodic check triggered')
     checkForNewMessagesOnScroll()
   }, 2000)
 
-  remoteLog('Periodic message check started', { intervalId: scrollCheckInterval })
+  log('Periodic message check started', { intervalId: scrollCheckInterval })
 }
 
 async function detectAndSendDialogue() {
@@ -147,10 +150,10 @@ async function detectAndSendDialogue() {
 }
 
 async function initialize() {
-  remoteLog('Content script initialized', { url: window.location.href, hash: window.location.hash })
+  log('Content script initialized', { url: window.location.href, hash: window.location.hash })
 
   adapter.onDialogueChange(async (event) => {
-    remoteLog('Dialogue changed event', event)
+    log('Dialogue changed event', event)
     indexedMessageIds.clear()
     if (scrollCheckInterval) {
       clearInterval(scrollCheckInterval)
