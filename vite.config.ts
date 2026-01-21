@@ -19,6 +19,10 @@ export default defineConfig({
           src: 'wasm/wasm_exec.js',
           dest: 'wasm',
         },
+        {
+          src: 'img/icons/*',
+          dest: 'img/icons',
+        },
       ],
     }),
   ],
