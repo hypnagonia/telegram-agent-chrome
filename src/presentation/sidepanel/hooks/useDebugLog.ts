@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback } from 'preact/hooks'
 
+const REMOTE_LOG_URL = 'http://localhost:3999/log'
+
+function sendRemoteLog(level: string, message: string) {
+  fetch(REMOTE_LOG_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source: 'Sidepanel', message: `[${level.toUpperCase()}] ${message}` }),
+  }).catch(() => {})
+}
+
 interface LogEntry {
   id: number
   level: 'log' | 'warn' | 'error' | 'info'
@@ -11,12 +21,16 @@ let logId = 0
 const logListeners: ((entry: LogEntry) => void)[] = []
 
 function createLogEntry(level: LogEntry['level'], args: unknown[]): LogEntry {
+  const message = args.map(arg =>
+    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+  ).join(' ')
+
+  sendRemoteLog(level, message)
+
   return {
     id: logId++,
     level,
-    message: args.map(arg =>
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' '),
+    message,
     timestamp: new Date(),
   }
 }
