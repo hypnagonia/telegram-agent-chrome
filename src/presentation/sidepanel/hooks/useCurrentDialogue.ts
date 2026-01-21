@@ -3,7 +3,6 @@ import type { Dialogue } from '@domain/entities/Dialogue'
 import {
   MessageType,
   sendToBackground,
-  type DialogueChangedPayload,
   type DialogueStatusPayload,
   type IndexUpdatedPayload,
 } from '@infrastructure/adapters/telegram/MessageBridge'
@@ -87,14 +86,17 @@ export function useCurrentDialogue() {
   useEffect(() => {
     const handleMessage = (message: { type: MessageType; payload: unknown }) => {
       if (message.type === MessageType.DIALOGUE_CHANGED) {
-        const payload = message.payload as DialogueChangedPayload
+        const payload = message.payload as { peerId: string | null; peerName: string | null }
         console.log('[useCurrentDialogue] DIALOGUE_CHANGED received:', payload)
         setState((prev) => ({
           ...prev,
           peerId: payload.peerId,
           peerName: payload.peerName,
+          dialogue: payload.peerId ? prev.dialogue : null,
         }))
-        fetchDialogueStatus(payload.peerId)
+        if (payload.peerId) {
+          fetchDialogueStatus(payload.peerId)
+        }
       } else if (message.type === MessageType.INDEX_UPDATED) {
         const payload = message.payload as IndexUpdatedPayload
         console.log('[useCurrentDialogue] INDEX_UPDATED received:', payload)
