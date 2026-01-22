@@ -282,6 +282,7 @@ export function App() {
           apiKey={settings.settings.apiKey}
           apiProvider={settings.settings.apiProvider}
           theme={theme}
+          promptTemplate={settings.settings.promptTemplate}
           loading={settings.loading}
           error={settings.error}
           saved={settings.saved}

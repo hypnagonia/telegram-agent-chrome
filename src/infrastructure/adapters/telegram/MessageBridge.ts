@@ -90,6 +90,7 @@ export interface SettingsPayload {
   apiProvider?: 'openai' | 'claude' | 'deepseek'
   personaId?: string
   theme?: 'light' | 'dark'
+  promptTemplate?: string
 }
 
 export function sendToBackground<T, R>(message: BridgeMessage<T>): Promise<R> {

@@ -9,6 +9,8 @@ export interface HintRequest {
   peerId: string
   currentMessage: string
   contextMessages: string[]
+  recentMessages: string[]
+  promptTemplate: string
 }
 
 export interface HintResponse {

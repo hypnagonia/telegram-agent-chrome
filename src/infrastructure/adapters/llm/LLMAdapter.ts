@@ -1,6 +1,5 @@
 import type { Hint, HintRequest } from '@domain/entities/Hint'
 import { HintBuilder } from '@domain/entities/Hint'
-import type { Persona } from '@domain/entities/Persona'
 import type { HintGenerator } from '@domain/ports/HintGenerator'
 import { OpenAIProvider } from './OpenAIProvider'
 import { ClaudeProvider } from './ClaudeProvider'
@@ -55,14 +54,16 @@ export class LLMAdapter implements HintGenerator {
     }
   }
 
-  async generate(request: HintRequest, persona: Persona): Promise<Hint[]> {
+  async generate(request: HintRequest): Promise<Hint[]> {
     console.log('[LLMAdapter] Generating hints with provider:', this.currentProvider)
     console.log('[LLMAdapter] Context messages count:', request.contextMessages.length)
+    console.log('[LLMAdapter] Recent messages count:', request.recentMessages.length)
 
     const prompt = this.promptBuilder.buildHintPrompt(
       request,
-      persona,
-      request.contextMessages
+      request.promptTemplate,
+      request.contextMessages,
+      request.recentMessages
     )
 
     this.lastDebugInfo = {
@@ -90,7 +91,7 @@ export class LLMAdapter implements HintGenerator {
       } else if (this.claudeProvider) {
         console.log('[LLMAdapter] Calling Claude...')
         response = await this.claudeProvider.chat(
-          persona.promptTemplate,
+          'You are a helpful assistant.',
           [{ role: 'user', content: prompt }]
         )
       } else {
