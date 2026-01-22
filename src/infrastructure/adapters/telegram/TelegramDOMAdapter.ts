@@ -265,4 +265,39 @@ export class TelegramDOMAdapter {
     const input = document.querySelector(SELECTORS.INPUT_MESSAGE)
     return input?.textContent?.trim() || ''
   }
+
+  insertTextToInput(text: string): boolean {
+    const input = document.querySelector(SELECTORS.INPUT_MESSAGE) as HTMLElement
+    if (!input) {
+      console.log('[TelegramDOM] Input not found')
+      return false
+    }
+
+    console.log('[TelegramDOM] Inserting text:', text.slice(0, 50))
+
+    input.focus()
+
+    input.innerHTML = ''
+    const textNode = document.createTextNode(text)
+    input.appendChild(textNode)
+
+    const inputEvent = new InputEvent('input', {
+      bubbles: true,
+      cancelable: true,
+      inputType: 'insertText',
+      data: text,
+    })
+    input.dispatchEvent(inputEvent)
+
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+
+    const range = document.createRange()
+    const sel = window.getSelection()
+    range.selectNodeContents(input)
+    range.collapse(false)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+
+    return true
+  }
 }

@@ -30,6 +30,16 @@ chrome.runtime.onMessage.addListener((message: BridgeMessage, _sender, sendRespo
     }
     return true
   }
+
+  if (message.type === MessageType.INSERT_TEXT) {
+    const payload = message.payload as { text: string }
+    log('INSERT_TEXT received', { text: payload.text.slice(0, 50) })
+    const success = adapter.insertTextToInput(payload.text)
+    log('INSERT_TEXT result', { success })
+    sendResponse({ success })
+    return true
+  }
+
   return false
 })
 

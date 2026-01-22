@@ -20,6 +20,7 @@ export enum MessageType {
   GET_PROMPT_TEMPLATES = 'GET_PROMPT_TEMPLATES',
   SAVE_PROMPT_TEMPLATE = 'SAVE_PROMPT_TEMPLATE',
   DELETE_PROMPT_TEMPLATE = 'DELETE_PROMPT_TEMPLATE',
+  INSERT_TEXT = 'INSERT_TEXT',
 }
 
 export interface BridgeMessage<T = unknown> {
@@ -110,6 +111,10 @@ export interface SavePromptTemplatePayload {
 
 export interface DeletePromptTemplatePayload {
   id: string
+}
+
+export interface InsertTextPayload {
+  text: string
 }
 
 export function sendToBackground<T, R>(message: BridgeMessage<T>): Promise<R> {

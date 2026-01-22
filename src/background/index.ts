@@ -16,6 +16,7 @@ import {
   type SettingsPayload,
   type SavePromptTemplatePayload,
   type DeletePromptTemplatePayload,
+  type InsertTextPayload,
 } from '@infrastructure/adapters/telegram/MessageBridge'
 import { MessageStore } from '@infrastructure/adapters/persistence/MessageStore'
 import { NoteStore } from '@infrastructure/adapters/persistence/NoteStore'
@@ -29,6 +30,7 @@ import { GenerateHintUseCase } from '@application/use-cases/GenerateHintUseCase'
 import { ManageNotesUseCase } from '@application/use-cases/ManageNotesUseCase'
 import { MessageBuilder } from '@domain/entities/Message'
 import { createLogger } from '@infrastructure/logging/remoteLog'
+import { encryptApiKey, decryptApiKey, isEncrypted } from '@infrastructure/utils/crypto'
 
 const log = createLogger('Background')
 
@@ -43,6 +45,10 @@ let currentDialogue: { peerId: string; peerName: string } | null = null
 
 const DEFAULT_PROMPT_TEMPLATE = `You are a helpful assistant generating reply suggestions for a Telegram conversation.
 
+Message format:
+- [You]: messages from me (the user who needs reply suggestions)
+- [@personA], [@personB], etc.: messages from other people (anonymized)
+
 Tone: friendly, casual
 
 Conversation context:
@@ -51,7 +57,7 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-You want to reply: "{{user_input}}"
+I want to reply: "{{user_input}}"
 
 Based on the context, suggest brief, natural replies that match the conversation tone.`
 
@@ -66,8 +72,14 @@ interface Settings {
 
 async function getSettings(): Promise<Settings> {
   const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'personaId', 'theme', 'promptTemplate', 'activeTemplateId'])
+  let apiKey = result.apiKey || ''
+
+  if (apiKey && isEncrypted(apiKey)) {
+    apiKey = await decryptApiKey(apiKey)
+  }
+
   return {
-    apiKey: result.apiKey || '',
+    apiKey,
     apiProvider: result.apiProvider || 'deepseek',
     personaId: result.personaId || 'default',
     theme: result.theme || 'system',
@@ -77,7 +89,14 @@ async function getSettings(): Promise<Settings> {
 }
 
 async function saveSettings(settings: Partial<Settings>): Promise<void> {
-  await chrome.storage.local.set(settings)
+  const toSave = { ...settings }
+
+  if (toSave.apiKey) {
+    toSave.apiKey = await encryptApiKey(toSave.apiKey)
+  }
+
+  await chrome.storage.local.set(toSave)
+
   if (settings.apiKey || settings.apiProvider) {
     const current = await getSettings()
     if (current.apiKey) {
@@ -578,6 +597,27 @@ onMessage<DeletePromptTemplatePayload>(
     log.log(' DELETE_PROMPT_TEMPLATE called:', payload.id)
     await promptTemplateStore.delete(payload.id)
     return promptTemplateStore.getAll()
+  }
+)
+
+onMessage<InsertTextPayload>(
+  MessageType.INSERT_TEXT,
+  async (payload) => {
+    log.log(' INSERT_TEXT called:', payload.text.slice(0, 50))
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!tab?.id) {
+      return { success: false }
+    }
+    try {
+      const result = await chrome.tabs.sendMessage(tab.id, {
+        type: MessageType.INSERT_TEXT,
+        payload: { text: payload.text },
+      })
+      return result
+    } catch (err) {
+      log.error(' INSERT_TEXT failed:', err)
+      return { success: false }
+    }
   }
 )
 

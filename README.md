@@ -6,6 +6,8 @@
 >
 > **Privacy:** Beware - do not share your private data with third-party APIs without filtering sensitive information and having a clear reason to do so.
 
+> **Data Sharing:** This extension only shares data with the LLM provider you configure. Data is sent only for chats you explicitly choose to index, and only the portions of the dialogue that were visible in the Telegram UI.
+
 A Chrome extension that enhances Telegram Web with AI-powered reply suggestions and private notes.
 
 ## Features

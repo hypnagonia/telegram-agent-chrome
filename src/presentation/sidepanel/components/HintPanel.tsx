@@ -106,7 +106,7 @@ export function HintPanel({
 
       {!loading && hints.length === 0 && !error && (
         <div style={styles.emptyState}>
-          <div style={styles.emptyStateIcon}>✨</div>
+          <div style={styles.emptyStateIcon}></div>
           <p style="font-size: 14px; line-height: 1.6">
             Generate AI-powered reply suggestions<br />based on your conversation context
           </p>
