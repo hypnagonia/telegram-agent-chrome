@@ -1,4 +1,4 @@
-import type { ChatMessage } from './OpenAIProvider'
+import type { ChatMessage, LLMResponse, LLMUsage } from './OpenAIProvider'
 
 export interface DeepSeekConfig {
   apiKey: string
@@ -14,7 +14,7 @@ export class DeepSeekProvider {
     this.model = config.model || 'deepseek-chat'
   }
 
-  async chat(messages: ChatMessage[]): Promise<string> {
+  async chat(messages: ChatMessage[]): Promise<LLMResponse> {
     console.log('[DeepSeek] chat called, apiKey set:', !!this.apiKey, 'model:', this.model)
 
     if (!this.apiKey) {
@@ -56,7 +56,13 @@ export class DeepSeekProvider {
     }
 
     const data = await response.json()
-    console.log('[DeepSeek] Success, response length:', data.choices[0]?.message?.content?.length || 0)
-    return data.choices[0]?.message?.content || ''
+    const content = data.choices[0]?.message?.content || ''
+    const usage: LLMUsage = {
+      inputTokens: data.usage?.prompt_tokens || 0,
+      outputTokens: data.usage?.completion_tokens || 0,
+      totalTokens: data.usage?.total_tokens || 0,
+    }
+    console.log('[DeepSeek] Success, tokens:', usage.totalTokens)
+    return { content, usage }
   }
 }

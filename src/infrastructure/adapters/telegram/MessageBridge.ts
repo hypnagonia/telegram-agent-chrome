@@ -10,12 +10,16 @@ export enum MessageType {
   GET_NOTES = 'GET_NOTES',
   SAVE_NOTE = 'SAVE_NOTE',
   DELETE_NOTE = 'DELETE_NOTE',
+  SEARCH_NOTES = 'SEARCH_NOTES',
   GET_DIALOGUE_STATUS = 'GET_DIALOGUE_STATUS',
   GET_CURRENT_DIALOGUE = 'GET_CURRENT_DIALOGUE',
   GET_ACTIVE_TAB_PEER = 'GET_ACTIVE_TAB_PEER',
   GET_SETTINGS = 'GET_SETTINGS',
   SAVE_SETTINGS = 'SAVE_SETTINGS',
   EXTRACT_MESSAGES = 'EXTRACT_MESSAGES',
+  GET_PROMPT_TEMPLATES = 'GET_PROMPT_TEMPLATES',
+  SAVE_PROMPT_TEMPLATE = 'SAVE_PROMPT_TEMPLATE',
+  DELETE_PROMPT_TEMPLATE = 'DELETE_PROMPT_TEMPLATE',
 }
 
 export interface BridgeMessage<T = unknown> {
@@ -89,8 +93,23 @@ export interface SettingsPayload {
   apiKey?: string
   apiProvider?: 'openai' | 'claude' | 'deepseek'
   personaId?: string
-  theme?: 'light' | 'dark'
+  theme?: 'light' | 'dark' | 'system'
   promptTemplate?: string
+  activeTemplateId?: string
+}
+
+export interface SearchNotesPayload {
+  query: string
+}
+
+export interface SavePromptTemplatePayload {
+  id: string
+  name: string
+  template: string
+}
+
+export interface DeletePromptTemplatePayload {
+  id: string
 }
 
 export function sendToBackground<T, R>(message: BridgeMessage<T>): Promise<R> {

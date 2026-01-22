@@ -38,11 +38,20 @@ export interface DialogueRecord {
   messageCount: number
 }
 
+export interface PromptTemplateRecord {
+  id: string
+  name: string
+  template: string
+  isDefault: boolean
+  createdAt: number
+}
+
 export class TelegramAssistantDB extends Dexie {
   messages!: Table<MessageRecord, string>
   notes!: Table<NoteRecord, string>
   personas!: Table<PersonaRecord, string>
   dialogues!: Table<DialogueRecord, string>
+  promptTemplates!: Table<PromptTemplateRecord, string>
 
   constructor() {
     super('TelegramAssistantDB')
@@ -52,6 +61,14 @@ export class TelegramAssistantDB extends Dexie {
       notes: 'id, peerId, createdAt, updatedAt',
       personas: 'id, isDefault',
       dialogues: 'peerId, isIndexed',
+    })
+
+    this.version(2).stores({
+      messages: 'id, peerId, timestamp',
+      notes: 'id, peerId, createdAt, updatedAt',
+      personas: 'id, isDefault',
+      dialogues: 'peerId, isIndexed',
+      promptTemplates: 'id, isDefault, createdAt',
     })
   }
 }

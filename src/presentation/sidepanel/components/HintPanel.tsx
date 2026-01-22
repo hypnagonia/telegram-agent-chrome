@@ -1,12 +1,21 @@
 import { useState } from 'preact/hooks'
 import type { Hint } from '@domain/entities/Hint'
 import { getStyles, type Theme } from '../styles'
+import { formatCost, type TokenInfo } from '@infrastructure/utils/tokenEstimator'
+
+const CopyIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>
+)
 
 interface HintPanelProps {
   hints: Hint[]
   loading: boolean
   error: string | null
   contextUsed: number
+  tokenInfo: TokenInfo | null
   onGenerate: (message: string) => void
   onSelectHint: (hint: Hint) => void
   theme: Theme
@@ -17,6 +26,7 @@ export function HintPanel({
   loading,
   error,
   contextUsed,
+  tokenInfo,
   onGenerate,
   onSelectHint,
   theme,
@@ -55,9 +65,23 @@ export function HintPanel({
         </div>
       )}
 
-      {contextUsed > 0 && (
-        <div style={`${styles.badge} ${styles.badgePrimary}; margin-top: 12px`}>
-          {contextUsed} context chunks used
+      {(contextUsed > 0 || tokenInfo) && (
+        <div style={`display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px`}>
+          {contextUsed > 0 && (
+            <div style={`${styles.badge} ${styles.badgePrimary}`}>
+              {contextUsed} context chunks
+            </div>
+          )}
+          {tokenInfo && (
+            <>
+              <div style={`${styles.badge} ${styles.badgeSuccess}`}>
+                {tokenInfo.totalTokens} tokens
+              </div>
+              <div style={`${styles.badge}; background: ${styles.colors.warningLight}; color: ${styles.colors.warning}`}>
+                {formatCost(tokenInfo.cost)}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -71,9 +95,9 @@ export function HintPanel({
               onClick={() => onSelectHint(hint)}
               title="Click to copy"
             >
-              <div style={styles.hintText}>{hint.text}</div>
-              <div style={`font-size: 10px; color: ${styles.colors.textMuted}; margin-top: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em`}>
-                Click to copy
+              <div style={`${styles.hintText}; display: flex; align-items: center; gap: 8px`}>
+                <span style="flex: 1">{hint.text}</span>
+                <CopyIcon />
               </div>
             </div>
           ))}
