@@ -13,6 +13,7 @@ interface Settings {
   personaId: string
   theme: Theme
   promptTemplate: string
+  activeTemplateId: string
 }
 
 interface SettingsState {
@@ -32,7 +33,7 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-User wants to reply: "{{user_input}}"
+You want to reply: "{{user_input}}"
 
 Based on the context, suggest brief, natural replies that match the conversation tone.`
 
@@ -40,8 +41,9 @@ const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   apiProvider: 'deepseek',
   personaId: 'default',
-  theme: 'dark',
+  theme: 'system',
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+  activeTemplateId: 'default',
 }
 
 export function useSettings() {
@@ -87,6 +89,7 @@ export function useSettings() {
         personaId: newSettings.personaId,
         theme: newSettings.theme,
         promptTemplate: newSettings.promptTemplate,
+        activeTemplateId: newSettings.activeTemplateId,
       }
       await sendToBackground<SettingsPayload, void>({
         type: MessageType.SAVE_SETTINGS,

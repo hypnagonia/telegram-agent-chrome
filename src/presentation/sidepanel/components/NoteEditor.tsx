@@ -6,15 +6,33 @@ interface NoteEditorProps {
   notes: Note[]
   loading: boolean
   error: string | null
+  searchResults: Note[]
+  searchQuery: string
+  searchLoading: boolean
   onSave: (id: string | null, content: string, tags: string[]) => void
   onDelete: (id: string) => void
+  onSearch: (query: string) => void
+  onClearSearch: () => void
   theme: Theme
 }
 
-export function NoteEditor({ notes, loading, error, onSave, onDelete, theme }: NoteEditorProps) {
+export function NoteEditor({
+  notes,
+  loading,
+  error,
+  searchResults,
+  searchQuery,
+  searchLoading,
+  onSave,
+  onDelete,
+  onSearch,
+  onClearSearch,
+  theme,
+}: NoteEditorProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [content, setContent] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [localSearchQuery, setLocalSearchQuery] = useState('')
   const styles = getStyles(theme)
 
   const handleStartCreate = () => {
@@ -49,6 +67,15 @@ export function NoteEditor({ notes, loading, error, onSave, onDelete, theme }: N
     }
   }
 
+  const handleSearchSubmit = () => {
+    onSearch(localSearchQuery)
+  }
+
+  const handleClearSearch = () => {
+    setLocalSearchQuery('')
+    onClearSearch()
+  }
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString(undefined, {
       month: 'short',
@@ -58,11 +85,49 @@ export function NoteEditor({ notes, loading, error, onSave, onDelete, theme }: N
     })
   }
 
+  const isSearching = searchQuery.length > 0
+  const displayNotes = isSearching ? searchResults : notes
+
   return (
     <div>
       {error && (
         <div style={`${styles.status} ${styles.statusError}; margin-bottom: 16px`}>
           {error}
+        </div>
+      )}
+
+      <div style={`display: flex; gap: 8px; margin-bottom: 16px`}>
+        <input
+          type="text"
+          style={`${styles.input}; flex: 1`}
+          placeholder="Search all notes..."
+          value={localSearchQuery}
+          onInput={(e) => setLocalSearchQuery((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSearchSubmit()
+          }}
+        />
+        {isSearching ? (
+          <button
+            style={`${styles.button} ${styles.secondaryButton}; padding: 8px 16px`}
+            onClick={handleClearSearch}
+          >
+            Clear
+          </button>
+        ) : (
+          <button
+            style={`${styles.button} ${styles.primaryButton}; padding: 8px 16px`}
+            onClick={handleSearchSubmit}
+            disabled={!localSearchQuery.trim()}
+          >
+            Search
+          </button>
+        )}
+      </div>
+
+      {isSearching && (
+        <div style={`${styles.badge} ${styles.badgePrimary}; margin-bottom: 16px`}>
+          {searchLoading ? 'Searching...' : `${searchResults.length} results for "${searchQuery}"`}
         </div>
       )}
 
@@ -92,7 +157,7 @@ export function NoteEditor({ notes, loading, error, onSave, onDelete, theme }: N
         </div>
       )}
 
-      {!isCreating && !editingId && (
+      {!isCreating && !editingId && !isSearching && (
         <button
           style={`${styles.button} ${styles.primaryButton}; width: 100%; margin-bottom: 20px`}
           onClick={handleStartCreate}
@@ -101,23 +166,32 @@ export function NoteEditor({ notes, loading, error, onSave, onDelete, theme }: N
         </button>
       )}
 
-      {notes.length > 0 ? (
+      {displayNotes.length > 0 ? (
         <div style={styles.section}>
-          <div style={styles.sectionTitle}>Your Notes ({notes.length})</div>
-          {notes.map((note) => (
+          <div style={styles.sectionTitle}>
+            {isSearching ? 'Search Results' : `Your Notes (${notes.length})`}
+          </div>
+          {displayNotes.map((note) => (
             <div key={note.id} style={styles.noteCard}>
+              {isSearching && (
+                <div style={`font-size: 10px; color: ${styles.colors.textMuted}; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em`}>
+                  {note.peerId}
+                </div>
+              )}
               <div style={styles.noteContent}>{note.content}</div>
               <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px">
                 <div style={styles.noteTimestamp}>
                   {formatDate(note.updatedAt)}
                 </div>
                 <div style="display: flex; gap: 8px">
-                  <button
-                    style={`padding: 6px 14px; font-size: 11px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: ${styles.colors.surfaceHover}; color: ${styles.colors.textSecondary}; transition: all 0.15s ease`}
-                    onClick={() => handleStartEdit(note)}
-                  >
-                    Edit
-                  </button>
+                  {!isSearching && (
+                    <button
+                      style={`padding: 6px 14px; font-size: 11px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: ${styles.colors.surfaceHover}; color: ${styles.colors.textSecondary}; transition: all 0.15s ease`}
+                      onClick={() => handleStartEdit(note)}
+                    >
+                      Edit
+                    </button>
+                  )}
                   <button
                     style={`padding: 6px 14px; font-size: 11px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; background: ${styles.colors.errorLight}; color: ${styles.colors.error}; transition: all 0.15s ease`}
                     onClick={() => handleDelete(note.id)}
@@ -130,7 +204,7 @@ export function NoteEditor({ notes, loading, error, onSave, onDelete, theme }: N
           ))}
         </div>
       ) : (
-        !isCreating && (
+        !isCreating && !isSearching && (
           <div style={styles.emptyState}>
             <div style={styles.emptyStateIcon}>📝</div>
             <p style="font-size: 14px; line-height: 1.6">
@@ -139,6 +213,15 @@ export function NoteEditor({ notes, loading, error, onSave, onDelete, theme }: N
             </p>
           </div>
         )
+      )}
+
+      {isSearching && displayNotes.length === 0 && !searchLoading && (
+        <div style={styles.emptyState}>
+          <div style={styles.emptyStateIcon}>🔍</div>
+          <p style="font-size: 14px; line-height: 1.6">
+            No notes found for "{searchQuery}"
+          </p>
+        </div>
       )}
     </div>
   )

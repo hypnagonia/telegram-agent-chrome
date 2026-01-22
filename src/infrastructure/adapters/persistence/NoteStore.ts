@@ -20,6 +20,11 @@ export class NoteStore implements NoteRepository {
     return records.map(recordToNote).reverse()
   }
 
+  async getAll(): Promise<Note[]> {
+    const records = await db.notes.orderBy('updatedAt').reverse().toArray()
+    return records.map(recordToNote)
+  }
+
   async delete(id: string): Promise<void> {
     await db.notes.delete(id)
   }

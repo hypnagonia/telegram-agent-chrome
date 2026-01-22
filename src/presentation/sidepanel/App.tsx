@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'preact/hooks'
-import { useCurrentDialogue, useHints, useNotes, useSettings } from './hooks'
+import { useCurrentDialogue, useHints, useNotes, useSettings, useSystemTheme, usePromptTemplates, useNoteSearch } from './hooks'
 import { patchConsole } from './hooks/useDebugLog'
 import { HintPanel, NoteEditor, Settings, IndexStatus, DebugPanel } from './components'
 import { getStyles } from './styles'
@@ -115,10 +115,13 @@ export function App() {
   const dialogue = useCurrentDialogue()
   const hints = useHints()
   const notes = useNotes(dialogue.peerId)
+  const noteSearch = useNoteSearch()
   const settings = useSettings()
+  const promptTemplates = usePromptTemplates()
 
-  const theme = settings.settings.theme || 'light'
-  const styles = getStyles(theme)
+  const themeSetting = settings.settings.theme || 'system'
+  const resolvedTheme = useSystemTheme(themeSetting)
+  const styles = getStyles(resolvedTheme)
 
   useEffect(() => {
     console.log('[App] mounted')
@@ -137,9 +140,9 @@ export function App() {
   }, [dialogue.peerId, dialogue.peerName])
 
   useEffect(() => {
-    document.body.style.background = theme === 'dark' ? '#0f0f14' : '#fafafa'
-    document.body.style.color = theme === 'dark' ? '#e4e4eb' : '#1a1a2e'
-  }, [theme])
+    document.body.style.background = resolvedTheme === 'dark' ? '#0f0f14' : '#fafafa'
+    document.body.style.color = resolvedTheme === 'dark' ? '#e4e4eb' : '#1a1a2e'
+  }, [resolvedTheme])
 
   const handleIndex = useCallback(async () => {
     if (!dialogue.peerId || !dialogue.peerName) return
@@ -225,14 +228,14 @@ export function App() {
           flex: 1;
         `}>
           <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
-          <div style={`font-size: 16px; font-weight: 600; color: ${theme === 'dark' ? '#888' : '#666'}; margin-bottom: 8px`}>
+          <div style={`font-size: 16px; font-weight: 600; color: ${resolvedTheme === 'dark' ? '#888' : '#666'}; margin-bottom: 8px`}>
             Not on Telegram
           </div>
-          <div style={`font-size: 13px; color: ${theme === 'dark' ? '#666' : '#888'}; line-height: 1.5`}>
+          <div style={`font-size: 13px; color: ${resolvedTheme === 'dark' ? '#666' : '#888'}; line-height: 1.5`}>
             Open <strong>web.telegram.org</strong> to use this extension
           </div>
         </div>
-        <Footer theme={theme} />
+        <Footer theme={resolvedTheme} />
       </div>
     )
   }
@@ -245,7 +248,7 @@ export function App() {
         loading={indexing || dialogue.loading}
         onIndex={handleIndex}
         onClearIndex={handleClearIndex}
-        theme={theme}
+        theme={resolvedTheme}
       />
 
       <div style={styles.tabs}>
@@ -260,9 +263,10 @@ export function App() {
           loading={hints.loading}
           error={hints.error}
           contextUsed={hints.contextUsed}
+          tokenInfo={hints.tokenInfo}
           onGenerate={handleGenerateHints}
           onSelectHint={handleSelectHint}
-          theme={theme}
+          theme={resolvedTheme}
         />
       )}
 
@@ -271,9 +275,14 @@ export function App() {
           notes={notes.notes}
           loading={notes.loading}
           error={notes.error}
+          searchResults={noteSearch.results}
+          searchQuery={noteSearch.query}
+          searchLoading={noteSearch.loading}
           onSave={handleSaveNote}
           onDelete={notes.remove}
-          theme={theme}
+          onSearch={noteSearch.search}
+          onClearSearch={noteSearch.clear}
+          theme={resolvedTheme}
         />
       )}
 
@@ -281,19 +290,24 @@ export function App() {
         <Settings
           apiKey={settings.settings.apiKey}
           apiProvider={settings.settings.apiProvider}
-          theme={theme}
+          theme={themeSetting}
+          resolvedTheme={resolvedTheme}
           promptTemplate={settings.settings.promptTemplate}
+          activeTemplateId={settings.settings.activeTemplateId}
+          templates={promptTemplates.templates}
           loading={settings.loading}
           error={settings.error}
           saved={settings.saved}
           onUpdate={settings.update}
           onSave={handleSaveSettings}
+          onSaveTemplate={promptTemplates.save}
+          onDeleteTemplate={promptTemplates.remove}
         />
       )}
 
-      <DebugPanel theme={theme} />
+      <DebugPanel theme={resolvedTheme} />
 
-      <Footer theme={theme} />
+      <Footer theme={resolvedTheme} />
     </div>
   )
 }

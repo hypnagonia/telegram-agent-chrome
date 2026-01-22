@@ -1,3 +1,5 @@
+import type { LLMResponse, LLMUsage } from './OpenAIProvider'
+
 export interface ClaudeMessage {
   role: 'user' | 'assistant'
   content: string
@@ -17,7 +19,7 @@ export class ClaudeProvider {
     this.model = config.model || 'claude-3-haiku-20240307'
   }
 
-  async chat(systemPrompt: string, messages: ClaudeMessage[]): Promise<string> {
+  async chat(systemPrompt: string, messages: ClaudeMessage[]): Promise<LLMResponse> {
     console.log('[Claude] chat called, apiKey set:', !!this.apiKey, 'model:', this.model)
 
     if (!this.apiKey) {
@@ -60,7 +62,13 @@ export class ClaudeProvider {
     }
 
     const data = await response.json()
-    console.log('[Claude] Success, response length:', data.content[0]?.text?.length || 0)
-    return data.content[0]?.text || ''
+    const content = data.content[0]?.text || ''
+    const usage: LLMUsage = {
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      totalTokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+    }
+    console.log('[Claude] Success, tokens:', usage.totalTokens)
+    return { content, usage }
   }
 }

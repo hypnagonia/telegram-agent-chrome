@@ -11,12 +11,16 @@ import {
   type GetNotesPayload,
   type SaveNotePayload,
   type DeleteNotePayload,
+  type SearchNotesPayload,
   type DialogueStatusPayload,
   type SettingsPayload,
+  type SavePromptTemplatePayload,
+  type DeletePromptTemplatePayload,
 } from '@infrastructure/adapters/telegram/MessageBridge'
 import { MessageStore } from '@infrastructure/adapters/persistence/MessageStore'
 import { NoteStore } from '@infrastructure/adapters/persistence/NoteStore'
 import { DialogueStore } from '@infrastructure/adapters/persistence/DialogueStore'
+import { PromptTemplateStore } from '@infrastructure/adapters/persistence/PromptTemplateStore'
 import { BM25Adapter } from '@infrastructure/adapters/rag/BM25Adapter'
 import { LLMAdapter, type LLMProviderType } from '@infrastructure/adapters/llm/LLMAdapter'
 import { IndexDialogueUseCase } from '@application/use-cases/IndexDialogueUseCase'
@@ -31,6 +35,7 @@ const log = createLogger('Background')
 const messageStore = new MessageStore()
 const noteStore = new NoteStore()
 const dialogueStore = new DialogueStore()
+const promptTemplateStore = new PromptTemplateStore()
 const ragAdapter = new BM25Adapter()
 
 let llmAdapter: LLMAdapter | null = null
@@ -46,7 +51,7 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-User wants to reply: "{{user_input}}"
+You want to reply: "{{user_input}}"
 
 Based on the context, suggest brief, natural replies that match the conversation tone.`
 
@@ -54,18 +59,20 @@ interface Settings {
   apiKey: string
   apiProvider: LLMProviderType
   personaId: string
-  theme: 'light' | 'dark'
+  theme: 'light' | 'dark' | 'system'
   promptTemplate: string
+  activeTemplateId: string
 }
 
 async function getSettings(): Promise<Settings> {
-  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'personaId', 'theme', 'promptTemplate'])
+  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'personaId', 'theme', 'promptTemplate', 'activeTemplateId'])
   return {
     apiKey: result.apiKey || '',
     apiProvider: result.apiProvider || 'deepseek',
     personaId: result.personaId || 'default',
-    theme: result.theme || 'dark',
+    theme: result.theme || 'system',
     promptTemplate: result.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
+    activeTemplateId: result.activeTemplateId || 'default',
   }
 }
 
@@ -525,6 +532,52 @@ onMessage<SettingsPayload>(
   MessageType.SAVE_SETTINGS,
   async (payload) => {
     await saveSettings(payload)
+  }
+)
+
+onMessage<SearchNotesPayload>(
+  MessageType.SEARCH_NOTES,
+  async (payload) => {
+    log.log(' SEARCH_NOTES called:', payload.query)
+    const allNotes = await noteStore.getAll()
+    const query = payload.query.toLowerCase()
+    const filtered = allNotes.filter(note =>
+      note.content.toLowerCase().includes(query) ||
+      note.tags.some(tag => tag.toLowerCase().includes(query))
+    )
+    log.log(' SEARCH_NOTES found:', filtered.length, 'notes')
+    return filtered
+  }
+)
+
+onMessage<undefined>(
+  MessageType.GET_PROMPT_TEMPLATES,
+  async () => {
+    return promptTemplateStore.getAll()
+  }
+)
+
+onMessage<SavePromptTemplatePayload>(
+  MessageType.SAVE_PROMPT_TEMPLATE,
+  async (payload) => {
+    log.log(' SAVE_PROMPT_TEMPLATE called:', payload.name)
+    await promptTemplateStore.save({
+      id: payload.id,
+      name: payload.name,
+      template: payload.template,
+      isDefault: false,
+      createdAt: Date.now(),
+    })
+    return promptTemplateStore.getAll()
+  }
+)
+
+onMessage<DeletePromptTemplatePayload>(
+  MessageType.DELETE_PROMPT_TEMPLATE,
+  async (payload) => {
+    log.log(' DELETE_PROMPT_TEMPLATE called:', payload.id)
+    await promptTemplateStore.delete(payload.id)
+    return promptTemplateStore.getAll()
   }
 )
 

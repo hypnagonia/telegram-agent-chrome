@@ -1,7 +1,7 @@
 import type { Hint, HintRequest } from '@domain/entities/Hint'
 import { HintBuilder } from '@domain/entities/Hint'
-import type { HintGenerator } from '@domain/ports/HintGenerator'
-import { OpenAIProvider } from './OpenAIProvider'
+import type { HintGenerator, HintGeneratorResult } from '@domain/ports/HintGenerator'
+import { OpenAIProvider, type LLMUsage } from './OpenAIProvider'
 import { ClaudeProvider } from './ClaudeProvider'
 import { DeepSeekProvider } from './DeepSeekProvider'
 import { PromptBuilder } from './PromptBuilder'
@@ -18,6 +18,7 @@ export interface LLMDebugInfo {
   prompt: string
   provider: string
   model: string
+  usage?: LLMUsage
 }
 
 export class LLMAdapter implements HintGenerator {
@@ -54,7 +55,7 @@ export class LLMAdapter implements HintGenerator {
     }
   }
 
-  async generate(request: HintRequest): Promise<Hint[]> {
+  async generate(request: HintRequest): Promise<HintGeneratorResult> {
     console.log('[LLMAdapter] Generating hints with provider:', this.currentProvider)
     console.log('[LLMAdapter] Context messages count:', request.contextMessages.length)
     console.log('[LLMAdapter] Recent messages count:', request.recentMessages.length)
@@ -75,37 +76,46 @@ export class LLMAdapter implements HintGenerator {
     console.log('[LLMAdapter] Built prompt, length:', prompt.length)
     console.log('[LLMAdapter] Prompt preview:', prompt.slice(0, 200))
 
-    let response: string
+    let content: string
+    let usage: LLMUsage | undefined
 
     try {
       if (this.currentProvider === 'openai' && this.openaiProvider) {
         console.log('[LLMAdapter] Calling OpenAI...')
-        response = await this.openaiProvider.chat([
+        const result = await this.openaiProvider.chat([
           { role: 'user', content: prompt },
         ])
+        content = result.content
+        usage = result.usage
       } else if (this.currentProvider === 'deepseek' && this.deepseekProvider) {
         console.log('[LLMAdapter] Calling DeepSeek...')
-        response = await this.deepseekProvider.chat([
+        const result = await this.deepseekProvider.chat([
           { role: 'user', content: prompt },
         ])
+        content = result.content
+        usage = result.usage
       } else if (this.claudeProvider) {
         console.log('[LLMAdapter] Calling Claude...')
-        response = await this.claudeProvider.chat(
+        const result = await this.claudeProvider.chat(
           'You are a helpful assistant.',
           [{ role: 'user', content: prompt }]
         )
+        content = result.content
+        usage = result.usage
       } else {
         throw new Error('No LLM provider configured')
       }
 
-      console.log('[LLMAdapter] Got response, length:', response.length)
-      console.log('[LLMAdapter] Response preview:', response.slice(0, 200))
+      this.lastDebugInfo.usage = usage
+      console.log('[LLMAdapter] Got response, length:', content.length, 'tokens:', usage?.totalTokens)
+      console.log('[LLMAdapter] Response preview:', content.slice(0, 200))
     } catch (err) {
       console.error('[LLMAdapter] LLM call failed:', err)
       throw err
     }
 
-    return this.parseResponse(response)
+    const hints = this.parseResponse(content)
+    return { hints, usage }
   }
 
   private parseResponse(response: string): Hint[] {

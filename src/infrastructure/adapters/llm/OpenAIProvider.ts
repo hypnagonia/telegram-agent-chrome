@@ -3,6 +3,17 @@ export interface ChatMessage {
   content: string
 }
 
+export interface LLMUsage {
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+}
+
+export interface LLMResponse {
+  content: string
+  usage: LLMUsage
+}
+
 export interface OpenAIConfig {
   apiKey: string
   model?: string
@@ -20,7 +31,7 @@ export class OpenAIProvider {
     this.baseUrl = config.baseUrl || 'https://api.openai.com/v1'
   }
 
-  async chat(messages: ChatMessage[]): Promise<string> {
+  async chat(messages: ChatMessage[]): Promise<LLMResponse> {
     console.log('[OpenAI] chat called, apiKey set:', !!this.apiKey, 'model:', this.model)
 
     if (!this.apiKey) {
@@ -62,7 +73,13 @@ export class OpenAIProvider {
     }
 
     const data = await response.json()
-    console.log('[OpenAI] Success, response length:', data.choices[0]?.message?.content?.length || 0)
-    return data.choices[0]?.message?.content || ''
+    const content = data.choices[0]?.message?.content || ''
+    const usage: LLMUsage = {
+      inputTokens: data.usage?.prompt_tokens || 0,
+      outputTokens: data.usage?.completion_tokens || 0,
+      totalTokens: data.usage?.total_tokens || 0,
+    }
+    console.log('[OpenAI] Success, tokens:', usage.totalTokens)
+    return { content, usage }
   }
 }
