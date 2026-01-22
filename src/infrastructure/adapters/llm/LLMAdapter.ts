@@ -35,6 +35,7 @@ export class LLMAdapter implements HintGenerator {
   public lastDebugInfo: LLMDebugInfo | null = null
 
   constructor(config: LLMAdapterConfig) {
+    console.log('[LLMAdapter] Constructor with config:', JSON.stringify(config))
     this.promptBuilder = new PromptBuilder()
     this.currentProvider = config.provider
 

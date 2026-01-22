@@ -11,6 +11,7 @@ interface Settings {
   apiKey: string
   apiProvider: 'openai' | 'claude' | 'deepseek'
   apiBaseUrl: string
+  apiModel: string
   personaId: string
   theme: Theme
   promptTemplate: string
@@ -42,6 +43,7 @@ const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   apiProvider: 'deepseek',
   apiBaseUrl: '',
+  apiModel: '',
   personaId: 'default',
   theme: 'system',
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,
@@ -89,6 +91,7 @@ export function useSettings() {
         apiKey: newSettings.apiKey,
         apiProvider: newSettings.apiProvider,
         apiBaseUrl: newSettings.apiBaseUrl,
+        apiModel: newSettings.apiModel,
         personaId: newSettings.personaId,
         theme: newSettings.theme,
         promptTemplate: newSettings.promptTemplate,

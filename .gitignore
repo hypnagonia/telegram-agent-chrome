@@ -10,3 +10,4 @@ dist/
 *.swo
 CLAUDE.md
 git-pr.sh
+dev-proxy.cjs

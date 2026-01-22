@@ -65,6 +65,7 @@ interface Settings {
   apiKey: string
   apiProvider: LLMProviderType
   apiBaseUrl: string
+  apiModel: string
   personaId: string
   theme: 'light' | 'dark' | 'system'
   promptTemplate: string
@@ -72,7 +73,7 @@ interface Settings {
 }
 
 async function getSettings(): Promise<Settings> {
-  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'apiBaseUrl', 'personaId', 'theme', 'promptTemplate', 'activeTemplateId'])
+  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'apiBaseUrl', 'apiModel', 'personaId', 'theme', 'promptTemplate', 'activeTemplateId'])
   let apiKey = result.apiKey || ''
 
   if (apiKey && isEncrypted(apiKey)) {
@@ -83,6 +84,7 @@ async function getSettings(): Promise<Settings> {
     apiKey,
     apiProvider: result.apiProvider || 'deepseek',
     apiBaseUrl: result.apiBaseUrl || '',
+    apiModel: result.apiModel || '',
     personaId: result.personaId || 'default',
     theme: result.theme || 'system',
     promptTemplate: result.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
@@ -99,14 +101,18 @@ async function saveSettings(settings: Partial<Settings>): Promise<void> {
 
   await chrome.storage.local.set(toSave)
 
-  if (settings.apiKey || settings.apiProvider || settings.apiBaseUrl !== undefined) {
+  if (settings.apiKey !== undefined || settings.apiProvider !== undefined || settings.apiBaseUrl !== undefined || settings.apiModel !== undefined) {
+    llmAdapter = null
     const current = await getSettings()
-    if (current.apiKey) {
+    log.log(' Settings for adapter:', { baseUrl: current.apiBaseUrl, model: current.apiModel, provider: current.apiProvider })
+    if (current.apiKey || current.apiBaseUrl) {
       llmAdapter = new LLMAdapter({
         provider: current.apiProvider,
-        apiKey: current.apiKey,
+        apiKey: current.apiKey || 'local',
         baseUrl: current.apiBaseUrl || undefined,
+        model: current.apiModel || undefined,
       })
+      log.log(' LLM adapter recreated with baseUrl:', current.apiBaseUrl || '(default)', 'model:', current.apiModel || '(default)')
     }
   }
 }
@@ -119,17 +125,19 @@ async function ensureLLMAdapter(): Promise<LLMAdapter> {
       apiKeySet: !!settings.apiKey,
       apiKeyLength: settings.apiKey?.length || 0,
       provider: settings.apiProvider,
-      baseUrl: settings.apiBaseUrl || '(default)'
+      baseUrl: settings.apiBaseUrl || '(default)',
+      model: settings.apiModel || '(default)'
     })
-    if (!settings.apiKey) {
-      throw new Error('API key not configured. Please set it in Settings tab.')
+    if (!settings.apiKey && !settings.apiBaseUrl) {
+      throw new Error('API key not configured. Please set it in Settings tab (or set custom Base URL for local models).')
     }
     llmAdapter = new LLMAdapter({
       provider: settings.apiProvider,
-      apiKey: settings.apiKey,
+      apiKey: settings.apiKey || 'local',
       baseUrl: settings.apiBaseUrl || undefined,
+      model: settings.apiModel || undefined,
     })
-    log.log(' LLM adapter created for provider:', settings.apiProvider)
+    log.log(' LLM adapter created for provider:', settings.apiProvider, 'baseUrl:', settings.apiBaseUrl || '(default)')
   }
   return llmAdapter
 }

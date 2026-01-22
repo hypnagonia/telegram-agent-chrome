@@ -305,6 +305,7 @@ export function App() {
           apiKey={settings.settings.apiKey}
           apiProvider={settings.settings.apiProvider}
           apiBaseUrl={settings.settings.apiBaseUrl}
+          apiModel={settings.settings.apiModel}
           theme={themeSetting}
           resolvedTheme={resolvedTheme}
           promptTemplate={settings.settings.promptTemplate}

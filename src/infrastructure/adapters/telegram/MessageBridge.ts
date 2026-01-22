@@ -94,6 +94,7 @@ export interface SettingsPayload {
   apiKey?: string
   apiProvider?: 'openai' | 'claude' | 'deepseek'
   apiBaseUrl?: string
+  apiModel?: string
   personaId?: string
   theme?: 'light' | 'dark' | 'system'
   promptTemplate?: string
