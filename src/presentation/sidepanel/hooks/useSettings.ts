@@ -12,6 +12,7 @@ interface Settings {
   apiProvider: 'openai' | 'claude' | 'deepseek'
   personaId: string
   theme: Theme
+  promptTemplate: string
 }
 
 interface SettingsState {
@@ -21,11 +22,26 @@ interface SettingsState {
   saved: boolean
 }
 
+const DEFAULT_PROMPT_TEMPLATE = `You are a helpful assistant generating reply suggestions for a Telegram conversation.
+
+Tone: friendly, casual
+
+Conversation context:
+{{context}}
+
+Recent messages:
+{{recent_messages}}
+
+User wants to reply: "{{user_input}}"
+
+Based on the context, suggest brief, natural replies that match the conversation tone.`
+
 const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   apiProvider: 'deepseek',
   personaId: 'default',
   theme: 'dark',
+  promptTemplate: DEFAULT_PROMPT_TEMPLATE,
 }
 
 export function useSettings() {
@@ -70,6 +86,7 @@ export function useSettings() {
         apiProvider: newSettings.apiProvider,
         personaId: newSettings.personaId,
         theme: newSettings.theme,
+        promptTemplate: newSettings.promptTemplate,
       }
       await sendToBackground<SettingsPayload, void>({
         type: MessageType.SAVE_SETTINGS,

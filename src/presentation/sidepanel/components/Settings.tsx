@@ -6,10 +6,11 @@ interface SettingsProps {
   apiKey: string
   apiProvider: ApiProvider
   theme: Theme
+  promptTemplate: string
   loading: boolean
   error: string | null
   saved: boolean
-  onUpdate: (updates: { apiKey?: string; apiProvider?: ApiProvider; theme?: Theme }) => void
+  onUpdate: (updates: { apiKey?: string; apiProvider?: ApiProvider; theme?: Theme; promptTemplate?: string }) => void
   onSave: () => void
 }
 
@@ -39,6 +40,7 @@ export function Settings({
   apiKey,
   apiProvider,
   theme,
+  promptTemplate,
   loading,
   error,
   saved,
@@ -101,6 +103,20 @@ export function Settings({
         />
         <div style={`font-size: 11px; color: ${styles.colors.textMuted}; margin-top: 8px; font-weight: 500`}>
           {getApiKeyHelp(apiProvider)}
+        </div>
+      </div>
+
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Prompt Template</label>
+        <textarea
+          style={`${styles.input}; min-height: 150px; resize: vertical; font-family: monospace; font-size: 12px; line-height: 1.5`}
+          value={promptTemplate}
+          onInput={(e) => onUpdate({ promptTemplate: (e.target as HTMLTextAreaElement).value })}
+        />
+        <div style={`font-size: 11px; color: ${styles.colors.textMuted}; margin-top: 8px; font-weight: 500`}>
+          Template variables: <code style={`background: ${theme === 'dark' ? '#2a2a3a' : '#e8e8e8'}; padding: 2px 4px; border-radius: 3px`}>{'{{context}}'}</code> (indexed context),{' '}
+          <code style={`background: ${theme === 'dark' ? '#2a2a3a' : '#e8e8e8'}; padding: 2px 4px; border-radius: 3px`}>{'{{recent_messages}}'}</code> (recent messages),{' '}
+          <code style={`background: ${theme === 'dark' ? '#2a2a3a' : '#e8e8e8'}; padding: 2px 4px; border-radius: 3px`}>{'{{user_input}}'}</code> (your hint input)
         </div>
       </div>
 
