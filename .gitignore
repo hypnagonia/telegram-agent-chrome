@@ -8,7 +8,4 @@ dist/
 .vscode/
 *.swp
 *.swo
-node_modules/
-dist
-package-lock.json
 CLAUDE.md
