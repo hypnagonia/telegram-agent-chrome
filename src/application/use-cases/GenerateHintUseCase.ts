@@ -1,14 +1,12 @@
 import type { Hint, HintRequest } from '@domain/entities/Hint'
-import type { Persona } from '@domain/entities/Persona'
-import { DEFAULT_PERSONA } from '@domain/entities/Persona'
 import type { HintGenerator } from '@domain/ports/HintGenerator'
-import type { PersonaRepository } from '@domain/ports/PersonaRepository'
 import type { MessageRepository } from '@domain/ports/MessageRepository'
 import type { RagRetriever } from '@domain/ports/RagRetriever'
 
 export interface GenerateHintInput {
   peerId: string
   currentMessage: string
+  promptTemplate: string
   topK?: number
 }
 
@@ -29,7 +27,6 @@ export class GenerateHintUseCase {
   constructor(
     private hintGenerator: HintGenerator,
     private ragRetriever: RagRetriever,
-    private personaRepository: PersonaRepository,
     private messageRepository: MessageRepository
   ) {}
 
@@ -40,10 +37,9 @@ export class GenerateHintUseCase {
     })
 
     const recentMessages = await this.messageRepository.findByPeerId(input.peerId)
-    const recentContext = recentMessages
+    const recentFormatted = recentMessages
       .slice(-20)
       .map(m => `[${m.isOutgoing ? 'You' : m.senderName}]: ${m.text}`)
-      .join('\n')
 
     console.log('[GenerateHintUseCase] Recent messages count:', recentMessages.length)
 
@@ -59,25 +55,21 @@ export class GenerateHintUseCase {
 
     const contextMessages = ragContext.length > 0
       ? ragContext
-      : recentContext ? [recentContext] : []
+      : recentFormatted.length > 0 ? [recentFormatted.join('\n')] : []
 
     console.log('[GenerateHintUseCase] Using context chunks:', contextMessages.length,
       ragContext.length > 0 ? '(from RAG)' : '(from recent messages)')
-
-    let persona: Persona | undefined = await this.personaRepository.findDefault()
-    if (!persona) {
-      console.log('[GenerateHintUseCase] Using default persona')
-      persona = DEFAULT_PERSONA
-    }
 
     const request: HintRequest = {
       peerId: input.peerId,
       currentMessage: input.currentMessage,
       contextMessages,
+      recentMessages: recentFormatted,
+      promptTemplate: input.promptTemplate,
     }
 
     console.log('[GenerateHintUseCase] Calling LLM generator...')
-    const hints = await this.hintGenerator.generate(request, persona)
+    const hints = await this.hintGenerator.generate(request)
     console.log('[GenerateHintUseCase] LLM returned', hints.length, 'hints')
 
     const adapter = this.hintGenerator as unknown as { lastDebugInfo?: { prompt: string; provider: string; model: string } }

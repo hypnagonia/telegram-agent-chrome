@@ -16,7 +16,6 @@ import {
 } from '@infrastructure/adapters/telegram/MessageBridge'
 import { MessageStore } from '@infrastructure/adapters/persistence/MessageStore'
 import { NoteStore } from '@infrastructure/adapters/persistence/NoteStore'
-import { PersonaStore } from '@infrastructure/adapters/persistence/PersonaStore'
 import { DialogueStore } from '@infrastructure/adapters/persistence/DialogueStore'
 import { BM25Adapter } from '@infrastructure/adapters/rag/BM25Adapter'
 import { LLMAdapter, type LLMProviderType } from '@infrastructure/adapters/llm/LLMAdapter'
@@ -31,27 +30,42 @@ const log = createLogger('Background')
 
 const messageStore = new MessageStore()
 const noteStore = new NoteStore()
-const personaStore = new PersonaStore()
 const dialogueStore = new DialogueStore()
 const ragAdapter = new BM25Adapter()
 
 let llmAdapter: LLMAdapter | null = null
 let currentDialogue: { peerId: string; peerName: string } | null = null
 
+const DEFAULT_PROMPT_TEMPLATE = `You are a helpful assistant generating reply suggestions for a Telegram conversation.
+
+Tone: friendly, casual
+
+Conversation context:
+{{context}}
+
+Recent messages:
+{{recent_messages}}
+
+User wants to reply: "{{user_input}}"
+
+Based on the context, suggest brief, natural replies that match the conversation tone.`
+
 interface Settings {
   apiKey: string
   apiProvider: LLMProviderType
   personaId: string
   theme: 'light' | 'dark'
+  promptTemplate: string
 }
 
 async function getSettings(): Promise<Settings> {
-  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'personaId', 'theme'])
+  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'personaId', 'theme', 'promptTemplate'])
   return {
     apiKey: result.apiKey || '',
     apiProvider: result.apiProvider || 'deepseek',
     personaId: result.personaId || 'default',
     theme: result.theme || 'dark',
+    promptTemplate: result.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
   }
 }
 
@@ -430,11 +444,13 @@ onMessage<GenerateHintsPayload>(
     log.log(' GENERATE_HINTS called:', payload)
     try {
       const adapter = await ensureLLMAdapter()
+      const settings = await getSettings()
       log.log(' LLM adapter ready')
-      const useCase = new GenerateHintUseCase(adapter, ragAdapter, personaStore, messageStore)
+      const useCase = new GenerateHintUseCase(adapter, ragAdapter, messageStore)
       const result = await useCase.execute({
         peerId: payload.peerId,
         currentMessage: payload.currentMessage,
+        promptTemplate: settings.promptTemplate,
       })
       log.log(' Hints generated:', result.hints.length)
       return result

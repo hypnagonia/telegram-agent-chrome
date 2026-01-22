@@ -1,21 +1,34 @@
-import type { Persona } from '@domain/entities/Persona'
 import type { HintRequest } from '@domain/entities/Hint'
 
+export interface PromptTemplateData {
+  context: string
+  recentMessages: string
+  userInput: string
+}
+
 export class PromptBuilder {
-  buildHintPrompt(request: HintRequest, persona: Persona, context: string[]): string {
-    const contextSection = context.length > 0
-      ? `\n\nRelevant conversation context:\n${context.join('\n')}`
-      : ''
+  buildHintPrompt(
+    request: HintRequest,
+    promptTemplate: string,
+    context: string[],
+    recentMessages: string[]
+  ): string {
+    const contextText = context.length > 0
+      ? context.join('\n')
+      : '(no indexed context available)'
 
-    const currentMessageSection = request.currentMessage
-      ? `\n\MI want you to help me to make the reply to the user: "${request.currentMessage}"`
-      : ''
+    const recentText = recentMessages.length > 0
+      ? recentMessages.join('\n')
+      : '(no recent messages)'
 
-    return `${persona.promptTemplate}
+    const userInput = request.currentMessage || ''
 
-Tone: ${persona.tone}
-${contextSection}
-${currentMessageSection}
+    const processedTemplate = promptTemplate
+      .replace(/\{\{context\}\}/g, contextText)
+      .replace(/\{\{recent_messages\}\}/g, recentText)
+      .replace(/\{\{user_input\}\}/g, userInput)
+
+    return `${processedTemplate}
 
 Generate from 1 to 3 reply suggestions. Format your response as a JSON array of strings:
 ["suggestion 1", "suggestion 2", "suggestion 3"]
