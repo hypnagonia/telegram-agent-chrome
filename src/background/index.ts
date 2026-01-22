@@ -431,7 +431,7 @@ onMessage<GenerateHintsPayload>(
     try {
       const adapter = await ensureLLMAdapter()
       log.log(' LLM adapter ready')
-      const useCase = new GenerateHintUseCase(adapter, ragAdapter, personaStore)
+      const useCase = new GenerateHintUseCase(adapter, ragAdapter, personaStore, messageStore)
       const result = await useCase.execute({
         peerId: payload.peerId,
         currentMessage: payload.currentMessage,

@@ -3,6 +3,7 @@ import type { Persona } from '@domain/entities/Persona'
 import { DEFAULT_PERSONA } from '@domain/entities/Persona'
 import type { HintGenerator } from '@domain/ports/HintGenerator'
 import type { PersonaRepository } from '@domain/ports/PersonaRepository'
+import type { MessageRepository } from '@domain/ports/MessageRepository'
 import type { RagRetriever } from '@domain/ports/RagRetriever'
 
 export interface GenerateHintInput {
@@ -28,7 +29,8 @@ export class GenerateHintUseCase {
   constructor(
     private hintGenerator: HintGenerator,
     private ragRetriever: RagRetriever,
-    private personaRepository: PersonaRepository
+    private personaRepository: PersonaRepository,
+    private messageRepository: MessageRepository
   ) {}
 
   async execute(input: GenerateHintInput): Promise<GenerateHintOutput> {
@@ -37,6 +39,14 @@ export class GenerateHintUseCase {
       currentMessage: input.currentMessage?.slice(0, 50),
     })
 
+    const recentMessages = await this.messageRepository.findByPeerId(input.peerId)
+    const recentContext = recentMessages
+      .slice(-20)
+      .map(m => `[${m.isOutgoing ? 'You' : m.senderName}]: ${m.text}`)
+      .join('\n')
+
+    console.log('[GenerateHintUseCase] Recent messages count:', recentMessages.length)
+
     const query = input.currentMessage || 'recent conversation'
     const topK = input.topK ?? 5
 
@@ -44,12 +54,14 @@ export class GenerateHintUseCase {
     const chunks = await this.ragRetriever.query(query, topK)
     console.log('[GenerateHintUseCase] RAG returned', chunks.length, 'chunks')
 
-    const contextMessages = chunks.map((chunk) => chunk.content)
-    if (contextMessages.length > 0) {
-      console.log('[GenerateHintUseCase] First context chunk:', contextMessages[0].slice(0, 100))
-    } else {
-      console.log('[GenerateHintUseCase] WARNING: No context found! Index may be empty.')
-    }
+    const ragContext = chunks.map((chunk) => chunk.content)
+
+    const contextMessages = ragContext.length > 0
+      ? ragContext
+      : recentContext ? [recentContext] : []
+
+    console.log('[GenerateHintUseCase] Using context chunks:', contextMessages.length,
+      ragContext.length > 0 ? '(from RAG)' : '(from recent messages)')
 
     let persona: Persona | undefined = await this.personaRepository.findDefault()
     if (!persona) {

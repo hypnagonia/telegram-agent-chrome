@@ -8,7 +8,7 @@ export class PromptBuilder {
       : ''
 
     const currentMessageSection = request.currentMessage
-      ? `\n\nUser is currently typing: "${request.currentMessage}"`
+      ? `\n\MI want you to help me to make the reply to the user: "${request.currentMessage}"`
       : ''
 
     return `${persona.promptTemplate}
@@ -17,7 +17,7 @@ Tone: ${persona.tone}
 ${contextSection}
 ${currentMessageSection}
 
-Generate exactly 3 reply suggestions. Format your response as a JSON array of strings:
+Generate from 1 to 3 reply suggestions. Format your response as a JSON array of strings:
 ["suggestion 1", "suggestion 2", "suggestion 3"]
 
 Only output the JSON array, nothing else.`
