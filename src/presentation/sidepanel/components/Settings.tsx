@@ -8,6 +8,7 @@ interface SettingsProps {
   apiKey: string
   apiProvider: ApiProvider
   apiBaseUrl: string
+  apiModel: string
   theme: Theme
   resolvedTheme: 'light' | 'dark'
   promptTemplate: string
@@ -16,7 +17,7 @@ interface SettingsProps {
   loading: boolean
   error: string | null
   saved: boolean
-  onUpdate: (updates: { apiKey?: string; apiProvider?: ApiProvider; apiBaseUrl?: string; theme?: Theme; promptTemplate?: string; activeTemplateId?: string }) => void
+  onUpdate: (updates: { apiKey?: string; apiProvider?: ApiProvider; apiBaseUrl?: string; apiModel?: string; theme?: Theme; promptTemplate?: string; activeTemplateId?: string }) => void
   onSave: () => void
   onSaveTemplate: (id: string, name: string, template: string) => void
   onDeleteTemplate: (id: string) => void
@@ -48,6 +49,7 @@ export function Settings({
   apiKey,
   apiProvider,
   apiBaseUrl,
+  apiModel,
   theme,
   resolvedTheme,
   promptTemplate,
@@ -172,6 +174,20 @@ export function Settings({
         />
         <div style={`font-size: 11px; color: ${styles.colors.textMuted}; margin-top: 8px; font-weight: 500`}>
           Leave empty for default. Use custom URL for self-hosted instances.
+        </div>
+      </div>
+
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Model (optional)</label>
+        <input
+          type="text"
+          style={styles.input}
+          placeholder="deepseek-chat"
+          value={apiModel}
+          onInput={(e) => onUpdate({ apiModel: (e.target as HTMLInputElement).value })}
+        />
+        <div style={`font-size: 11px; color: ${styles.colors.textMuted}; margin-top: 8px; font-weight: 500`}>
+          Leave empty for default. For Ollama use model name like "deepseek-r1:7b".
         </div>
       </div>
 
