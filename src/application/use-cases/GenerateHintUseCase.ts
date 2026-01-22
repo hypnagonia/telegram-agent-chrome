@@ -47,7 +47,8 @@ export class GenerateHintUseCase {
 
     console.log('[GenerateHintUseCase] Recent messages count:', recentMessages.length)
 
-    const query = input.currentMessage || 'recent conversation'
+    const baseQuery = input.currentMessage || 'recent conversation'
+    const query = `${input.peerId} ${baseQuery}`
     const topK = input.topK ?? 5
 
     console.log('[GenerateHintUseCase] Querying RAG with:', { query: query.slice(0, 50), topK })

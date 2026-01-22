@@ -448,24 +448,31 @@ onMessage<GenerateHintsPayload>(
 onMessage<GetNotesPayload>(
   MessageType.GET_NOTES,
   async (payload) => {
+    log.log(' GET_NOTES called:', payload.peerId)
     const useCase = new ManageNotesUseCase(noteStore)
-    return useCase.getByPeerId(payload.peerId)
+    const notes = await useCase.getByPeerId(payload.peerId)
+    log.log(' GET_NOTES returning:', notes.length, 'notes')
+    return notes
   }
 )
 
 onMessage<SaveNotePayload>(
   MessageType.SAVE_NOTE,
   async (payload) => {
+    log.log(' SAVE_NOTE called:', { id: payload.id, peerId: payload.peerId })
     const useCase = new ManageNotesUseCase(noteStore)
     const existing = await useCase.getById(payload.id)
     if (existing) {
+      log.log(' Updating existing note:', payload.id)
       return useCase.update({
         id: payload.id,
         content: payload.content,
         tags: payload.tags,
       })
     } else {
+      log.log(' Creating new note:', payload.id)
       return useCase.create({
+        id: payload.id,
         peerId: payload.peerId,
         content: payload.content,
         tags: payload.tags,
@@ -477,8 +484,10 @@ onMessage<SaveNotePayload>(
 onMessage<DeleteNotePayload>(
   MessageType.DELETE_NOTE,
   async (payload) => {
+    log.log(' DELETE_NOTE called:', payload.id)
     const useCase = new ManageNotesUseCase(noteStore)
     await useCase.delete(payload.id)
+    log.log(' DELETE_NOTE completed')
   }
 )
 

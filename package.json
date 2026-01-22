@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "tsc --noEmit && vite build",
+    "build:hash": "./scripts/build-hash.sh",
+    "build:verify": "./scripts/verify-build.sh",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
