@@ -5,6 +5,9 @@ import { OpenAIProvider, type LLMUsage } from './OpenAIProvider'
 import { ClaudeProvider } from './ClaudeProvider'
 import { DeepSeekProvider } from './DeepSeekProvider'
 import { PromptBuilder } from './PromptBuilder'
+import { createLogger } from '@infrastructure/logging/remoteLog'
+
+const log = createLogger('LLMAdapter')
 
 export type LLMProviderType = 'openai' | 'claude' | 'deepseek'
 
@@ -12,6 +15,7 @@ export interface LLMAdapterConfig {
   provider: LLMProviderType
   apiKey: string
   model?: string
+  baseUrl?: string
 }
 
 export interface LLMDebugInfo {
@@ -45,6 +49,7 @@ export class LLMAdapter implements HintGenerator {
       this.deepseekProvider = new DeepSeekProvider({
         apiKey: config.apiKey,
         model: config.model,
+        baseUrl: config.baseUrl,
       })
     } else {
       this.currentModel = config.model || 'claude-3-haiku-20240307'
@@ -107,8 +112,8 @@ export class LLMAdapter implements HintGenerator {
       }
 
       this.lastDebugInfo.usage = usage
-      console.log('[LLMAdapter] Got response, length:', content.length, 'tokens:', usage?.totalTokens)
-      console.log('[LLMAdapter] Response preview:', content.slice(0, 200))
+      log.log('LLM Response:', content)
+      log.log('Tokens:', { input: usage?.inputTokens, output: usage?.outputTokens, total: usage?.totalTokens })
     } catch (err) {
       console.error('[LLMAdapter] LLM call failed:', err)
       throw err
@@ -116,6 +121,15 @@ export class LLMAdapter implements HintGenerator {
 
     const hints = this.parseResponse(content)
     return { hints, usage }
+  }
+
+  private cleanSuggestion(text: string): string {
+    return text
+      .replace(/\d{1,2}:\d{2}\d{1,2}:\d{2}$/g, '')
+      .replace(/\d{1,2}:\d{2}$/g, '')
+      .replace(/[\u{1F300}-\u{1F9FF}]+$/u, '')
+      .replace(/[✨🎉🎊💫⭐️🌟]+$/g, '')
+      .trim()
   }
 
   private parseResponse(response: string): Hint[] {
@@ -136,7 +150,7 @@ export class LLMAdapter implements HintGenerator {
       return suggestions.slice(0, 3).map((text, index) =>
         new HintBuilder()
           .withId(`hint-${Date.now()}-${index}`)
-          .withText(text)
+          .withText(this.cleanSuggestion(text))
           .withConfidence(0.8 - index * 0.1)
           .withGeneratedAt(Date.now())
           .build()

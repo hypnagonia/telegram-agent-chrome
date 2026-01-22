@@ -3,25 +3,30 @@ import type { ChatMessage, LLMResponse, LLMUsage } from './OpenAIProvider'
 export interface DeepSeekConfig {
   apiKey: string
   model?: string
+  baseUrl?: string
 }
+
+const DEFAULT_BASE_URL = 'https://api.deepseek.com'
 
 export class DeepSeekProvider {
   private apiKey: string
   private model: string
+  private baseUrl: string
 
   constructor(config: DeepSeekConfig) {
     this.apiKey = config.apiKey
     this.model = config.model || 'deepseek-chat'
+    this.baseUrl = (config.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, '')
   }
 
   async chat(messages: ChatMessage[]): Promise<LLMResponse> {
-    console.log('[DeepSeek] chat called, apiKey set:', !!this.apiKey, 'model:', this.model)
+    console.log('[DeepSeek] chat called, apiKey set:', !!this.apiKey, 'model:', this.model, 'baseUrl:', this.baseUrl)
 
     if (!this.apiKey) {
       throw new Error('DeepSeek API key not configured. Go to Settings to add your key.')
     }
 
-    const url = 'https://api.deepseek.com/chat/completions'
+    const url = `${this.baseUrl}/chat/completions`
     console.log('[DeepSeek] Fetching:', url)
 
     let response: Response

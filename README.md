@@ -2,11 +2,11 @@
 
 ![Demo](img/demo2.jpg)
 
-> **Warning:** This project is not production ready and will never be. Use AI wisely and with great care.
+> **Warning:** This project is not production ready. Use AI wisely and with great care.
 >
 > **Privacy:** Beware - do not share your private data with third-party APIs without filtering sensitive information and having a clear reason to do so.
 
-> **Data Sharing:** This extension only shares data with the LLM provider you configure. Data is sent only for chats you explicitly choose to index, and only the portions of the dialogue that were visible in the Telegram UI.
+> **Data Sharing:** This extension only shares data with the LLM provider you configure. Data is sent only for chats you explicitly choose to index, and only the portions of the dialogue that were visible in the Telegram UI. You can also connect your own self-hosted LLM instance via custom API URL - in this case, no data is shared externally.
 
 A Chrome extension that enhances Telegram Web with AI-powered reply suggestions and private notes.
 

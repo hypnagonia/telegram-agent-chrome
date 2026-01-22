@@ -57,13 +57,14 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-I want to reply: "{{user_input}}"
+My reply idea/topic: "{{user_input}}"
 
-Based on the context, suggest brief, natural replies that match the conversation tone.`
+Generate full reply messages based on my idea above. Do NOT just repeat my input - expand it into complete, natural replies that match the conversation tone.`
 
 interface Settings {
   apiKey: string
   apiProvider: LLMProviderType
+  apiBaseUrl: string
   personaId: string
   theme: 'light' | 'dark' | 'system'
   promptTemplate: string
@@ -71,7 +72,7 @@ interface Settings {
 }
 
 async function getSettings(): Promise<Settings> {
-  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'personaId', 'theme', 'promptTemplate', 'activeTemplateId'])
+  const result = await chrome.storage.local.get(['apiKey', 'apiProvider', 'apiBaseUrl', 'personaId', 'theme', 'promptTemplate', 'activeTemplateId'])
   let apiKey = result.apiKey || ''
 
   if (apiKey && isEncrypted(apiKey)) {
@@ -81,6 +82,7 @@ async function getSettings(): Promise<Settings> {
   return {
     apiKey,
     apiProvider: result.apiProvider || 'deepseek',
+    apiBaseUrl: result.apiBaseUrl || '',
     personaId: result.personaId || 'default',
     theme: result.theme || 'system',
     promptTemplate: result.promptTemplate || DEFAULT_PROMPT_TEMPLATE,
@@ -97,12 +99,13 @@ async function saveSettings(settings: Partial<Settings>): Promise<void> {
 
   await chrome.storage.local.set(toSave)
 
-  if (settings.apiKey || settings.apiProvider) {
+  if (settings.apiKey || settings.apiProvider || settings.apiBaseUrl !== undefined) {
     const current = await getSettings()
     if (current.apiKey) {
       llmAdapter = new LLMAdapter({
         provider: current.apiProvider,
         apiKey: current.apiKey,
+        baseUrl: current.apiBaseUrl || undefined,
       })
     }
   }
@@ -115,7 +118,8 @@ async function ensureLLMAdapter(): Promise<LLMAdapter> {
     log.log(' Settings loaded:', {
       apiKeySet: !!settings.apiKey,
       apiKeyLength: settings.apiKey?.length || 0,
-      provider: settings.apiProvider
+      provider: settings.apiProvider,
+      baseUrl: settings.apiBaseUrl || '(default)'
     })
     if (!settings.apiKey) {
       throw new Error('API key not configured. Please set it in Settings tab.')
@@ -123,6 +127,7 @@ async function ensureLLMAdapter(): Promise<LLMAdapter> {
     llmAdapter = new LLMAdapter({
       provider: settings.apiProvider,
       apiKey: settings.apiKey,
+      baseUrl: settings.apiBaseUrl || undefined,
     })
     log.log(' LLM adapter created for provider:', settings.apiProvider)
   }
