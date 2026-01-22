@@ -8,6 +8,7 @@ import {
   sendToBackground,
   type IndexDialoguePayload,
   type ClearIndexPayload,
+  type InsertTextPayload,
 } from '@infrastructure/adapters/telegram/MessageBridge'
 import type { Hint } from '@domain/entities/Hint'
 
@@ -187,8 +188,21 @@ export function App() {
     [dialogue.peerId, hints.generate]
   )
 
-  const handleSelectHint = useCallback((hint: Hint) => {
-    navigator.clipboard.writeText(hint.text)
+  const handleSelectHint = useCallback(async (hint: Hint) => {
+    console.log('[App] handleSelectHint called:', hint.text.slice(0, 50))
+    try {
+      const result = await sendToBackground<InsertTextPayload, { success: boolean }>({
+        type: MessageType.INSERT_TEXT,
+        payload: { text: hint.text },
+      })
+      console.log('[App] INSERT_TEXT result:', result)
+      if (!result?.success) {
+        navigator.clipboard.writeText(hint.text)
+      }
+    } catch (err) {
+      console.log('[App] INSERT_TEXT error, copying to clipboard:', err)
+      navigator.clipboard.writeText(hint.text)
+    }
   }, [])
 
   const handleSaveNote = useCallback(
@@ -305,7 +319,7 @@ export function App() {
         />
       )}
 
-      <DebugPanel theme={resolvedTheme} />
+      {import.meta.env.DEV && <DebugPanel theme={resolvedTheme} />}
 
       <Footer theme={resolvedTheme} />
     </div>

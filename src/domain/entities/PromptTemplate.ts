@@ -12,7 +12,16 @@ export const PRESET_TEMPLATES: PromptTemplate[] = [
     name: 'Default',
     template: `You are a helpful assistant generating reply suggestions for a Telegram conversation.
 
-Tone: friendly, casual
+Message format:
+- [You]: messages from me (the user who needs reply suggestions)
+- [@personA], [@personB], etc.: messages from other people (anonymized)
+
+IMPORTANT: Analyze my messaging style from [You] messages - pay attention to:
+- Punctuation habits (do I use periods, commas, ellipsis?)
+- Emoji and emoticon usage (smileys, reactions)
+- Capitalization style
+- Message length and structure
+- Language quirks and expressions
 
 Conversation context:
 {{context}}
@@ -20,9 +29,9 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-User wants to reply: "{{user_input}}"
+I want to reply: "{{user_input}}"
 
-Based on the context, suggest brief, natural replies that match the conversation tone.`,
+Generate replies that match MY writing style exactly as shown in [You] messages. Mimic my punctuation, emoji usage, and tone.`,
     isDefault: true,
     createdAt: 0,
   },
@@ -30,6 +39,10 @@ Based on the context, suggest brief, natural replies that match the conversation
     id: 'formal',
     name: 'Formal',
     template: `You are a professional assistant generating formal reply suggestions for a business conversation.
+
+Message format:
+- [You]: messages from me (the user who needs reply suggestions)
+- [@personA], [@personB], etc.: messages from other people (anonymized)
 
 Tone: professional, polite, formal
 
@@ -39,7 +52,7 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-You want to reply: "{{user_input}}"
+I want to reply: "{{user_input}}"
 
 Generate formal, professional replies suitable for business communication.`,
     isDefault: false,
@@ -50,15 +63,19 @@ Generate formal, professional replies suitable for business communication.`,
     name: 'Brief',
     template: `Generate short, concise reply suggestions.
 
+Message format: [You] = me, [@personA/B/etc] = others
+
+Analyze my style from [You] messages - match my punctuation, emoji usage, and tone.
+
 Context:
 {{context}}
 
 Recent:
 {{recent_messages}}
 
-Reply to: "{{user_input}}"
+I want to reply: "{{user_input}}"
 
-Keep replies under 20 words. Be direct and to the point.`,
+Keep replies under 20 words. Match my messaging style.`,
     isDefault: false,
     createdAt: 0,
   },
