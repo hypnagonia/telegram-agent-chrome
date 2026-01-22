@@ -93,6 +93,7 @@ export interface DialogueStatusPayload {
 export interface SettingsPayload {
   apiKey?: string
   apiProvider?: 'openai' | 'claude' | 'deepseek'
+  apiBaseUrl?: string
   personaId?: string
   theme?: 'light' | 'dark' | 'system'
   promptTemplate?: string

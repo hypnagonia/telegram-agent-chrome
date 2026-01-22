@@ -29,9 +29,9 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-I want to reply: "{{user_input}}"
+My reply idea/topic: "{{user_input}}"
 
-Generate replies that match MY writing style exactly as shown in [You] messages. Mimic my punctuation, emoji usage, and tone.`,
+Generate full reply messages based on my idea above. Do NOT just repeat my input - expand it into complete, natural replies that match MY writing style from [You] messages. Mimic my punctuation, emoji usage, and tone.`,
     isDefault: true,
     createdAt: 0,
   },
@@ -52,9 +52,9 @@ Conversation context:
 Recent messages:
 {{recent_messages}}
 
-I want to reply: "{{user_input}}"
+My reply idea/topic: "{{user_input}}"
 
-Generate formal, professional replies suitable for business communication.`,
+Generate full formal reply messages based on my idea above. Do NOT just repeat my input - expand it into complete, professional replies.`,
     isDefault: false,
     createdAt: 0,
   },
@@ -73,9 +73,9 @@ Context:
 Recent:
 {{recent_messages}}
 
-I want to reply: "{{user_input}}"
+My reply idea/topic: "{{user_input}}"
 
-Keep replies under 20 words. Match my messaging style.`,
+Expand my idea into full reply messages (under 20 words each). Do NOT just repeat my input. Match my messaging style.`,
     isDefault: false,
     createdAt: 0,
   },

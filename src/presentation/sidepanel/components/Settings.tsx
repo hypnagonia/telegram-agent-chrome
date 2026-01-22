@@ -7,6 +7,7 @@ type ApiProvider = 'openai' | 'claude' | 'deepseek'
 interface SettingsProps {
   apiKey: string
   apiProvider: ApiProvider
+  apiBaseUrl: string
   theme: Theme
   resolvedTheme: 'light' | 'dark'
   promptTemplate: string
@@ -15,7 +16,7 @@ interface SettingsProps {
   loading: boolean
   error: string | null
   saved: boolean
-  onUpdate: (updates: { apiKey?: string; apiProvider?: ApiProvider; theme?: Theme; promptTemplate?: string; activeTemplateId?: string }) => void
+  onUpdate: (updates: { apiKey?: string; apiProvider?: ApiProvider; apiBaseUrl?: string; theme?: Theme; promptTemplate?: string; activeTemplateId?: string }) => void
   onSave: () => void
   onSaveTemplate: (id: string, name: string, template: string) => void
   onDeleteTemplate: (id: string) => void
@@ -46,6 +47,7 @@ function getApiKeyHelp(provider: ApiProvider): string {
 export function Settings({
   apiKey,
   apiProvider,
+  apiBaseUrl,
   theme,
   resolvedTheme,
   promptTemplate,
@@ -156,6 +158,20 @@ export function Settings({
         />
         <div style={`font-size: 11px; color: ${styles.colors.textMuted}; margin-top: 8px; font-weight: 500`}>
           {getApiKeyHelp(apiProvider)}
+        </div>
+      </div>
+
+      <div style={styles.formGroup}>
+        <label style={styles.label}>API Base URL (optional)</label>
+        <input
+          type="text"
+          style={styles.input}
+          placeholder="https://api.deepseek.com"
+          value={apiBaseUrl}
+          onInput={(e) => onUpdate({ apiBaseUrl: (e.target as HTMLInputElement).value })}
+        />
+        <div style={`font-size: 11px; color: ${styles.colors.textMuted}; margin-top: 8px; font-weight: 500`}>
+          Leave empty for default. Use custom URL for self-hosted instances.
         </div>
       </div>
 

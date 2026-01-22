@@ -10,6 +10,7 @@ import type { Theme } from '../styles'
 interface Settings {
   apiKey: string
   apiProvider: 'openai' | 'claude' | 'deepseek'
+  apiBaseUrl: string
   personaId: string
   theme: Theme
   promptTemplate: string
@@ -40,6 +41,7 @@ Based on the context, suggest brief, natural replies that match the conversation
 const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   apiProvider: 'deepseek',
+  apiBaseUrl: '',
   personaId: 'default',
   theme: 'system',
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,
@@ -86,6 +88,7 @@ export function useSettings() {
       const payload: SettingsPayload = {
         apiKey: newSettings.apiKey,
         apiProvider: newSettings.apiProvider,
+        apiBaseUrl: newSettings.apiBaseUrl,
         personaId: newSettings.personaId,
         theme: newSettings.theme,
         promptTemplate: newSettings.promptTemplate,

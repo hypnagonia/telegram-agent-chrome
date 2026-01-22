@@ -30,9 +30,14 @@ export class PromptBuilder {
 
     return `${processedTemplate}
 
-Generate from 1 to 3 reply suggestions. Format your response as a JSON array of strings:
-["suggestion 1", "suggestion 2", "suggestion 3"]
+CRITICAL: My input "${userInput}" is just the TOPIC/IDEA. Generate replies that:
+- Do NOT start with or contain "${userInput}" verbatim
+- Are complete standalone messages I can send
+- Respond TO the conversation, not echo my input
 
-Only output the JSON array, nothing else.`
+Generate 1-3 reply suggestions as a JSON array:
+["suggestion 1", "suggestion 2"]
+
+Only output the JSON array.`
   }
 }

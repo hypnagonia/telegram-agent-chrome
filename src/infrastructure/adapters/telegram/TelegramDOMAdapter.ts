@@ -54,6 +54,15 @@ export class TelegramDOMAdapter {
     return messages.sort((a, b) => a.timestamp - b.timestamp)
   }
 
+  private cleanMessageText(text: string): string {
+    return text
+      .replace(/edited\d{1,2}:\d{2}edited\d{1,2}:\d{2}$/g, '')
+      .replace(/\d{1,2}:\d{2}\d{1,2}:\d{2}$/g, '')
+      .replace(/edited\d{1,2}:\d{2}$/g, '')
+      .replace(/\d{1,2}:\d{2}$/g, '')
+      .trim()
+  }
+
   private extractMessageFromBubble(bubble: Element): ExtractedMessage | null {
     const messageId = getBubbleMessageId(bubble)
     if (!messageId) {
@@ -61,7 +70,12 @@ export class TelegramDOMAdapter {
     }
 
     const messageEl = bubble.querySelector(SELECTORS.MESSAGE_TEXT)
-    const text = messageEl?.textContent?.trim()
+    const rawText = messageEl?.textContent?.trim()
+    if (!rawText) {
+      return null
+    }
+
+    const text = this.cleanMessageText(rawText)
     if (!text) {
       return null
     }
